@@ -6,11 +6,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anyio>=4.0",
+    "pygame>=2.6.0",
 ]
 
 [project.scripts]
-zozode = "zozode.client:main"
-zozode-server = "zozode.server:main"
+zozode = "zozode.cli:main"
 
 [dependency-groups]
 dev = [

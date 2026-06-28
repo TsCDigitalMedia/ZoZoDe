@@ -15,60 +15,37 @@ uv sync
 
 ## Run
 
-Start the UDP server on the default UDP port `2806`:
-
-```bash
-uv run zozode-server
-```
-
-The server automatically tries to allow the UDP port through the platform firewall when supported. Use `--no-firewall` to skip that step.
-
-Run the UDP client against the default UDP port `2806`:
+Start a server on the default UDP port `2806`:
 
 ```bash
 uv run zozode
 ```
 
-Send a custom client message:
+Join from another machine on the same LAN:
 
 ```bash
-uv run zozode "hello from client"
+uv run zozode --join <server-ip>
 ```
 
-Use LAN binding when another machine needs to connect:
+Use a custom UDP port when needed:
 
 ```bash
-uv run zozode-server --port 2806
-uv run zozode "hello over LAN" --host <server-ip> --port 2806
+uv run zozode --port 2807
+uv run zozode --join <server-ip> --port 2807
 ```
 
-Compatibility commands are also available:
+## Controls
 
-```bash
-uv run zozode server
-uv run zozode client "hello"
-```
+- `W` moves up
+- `A` moves left
+- `S` moves down
+- `D` moves right
+
+Each joining client is assigned a random dot color by the server. Movement is sent over UDP.
 
 ## Test and lint
 
 ```bash
 uv run pytest
 uv run ruff check .
-```
-
-## Project layout
-
-```text
-src/zozode/
-  __init__.py      package metadata
-  client.py        client entrypoint for `uv run zozode`
-  server.py        server entrypoint for `uv run zozode-server`
-  cli.py           compatibility command router
-  config.py        UDP configuration model
-  firewall.py      multi-platform firewall allow helper
-  udp.py           UDP send/server primitives
-tests/
-  test_config.py   config tests
-  test_entrypoints.py entrypoint parser tests
-main.py            compatibility wrapper
 ```

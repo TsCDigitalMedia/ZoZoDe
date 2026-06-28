@@ -1,17 +1,15 @@
-from zozode.client import build_parser as build_client_parser
-from zozode.server import build_parser as build_server_parser
+from zozode.cli import build_parser
 
 
-def test_client_defaults_to_message_for_simple_run():
-    args = build_client_parser().parse_args([])
+def test_zozode_defaults_to_server_mode():
+    args = build_parser().parse_args([])
 
-    assert args.message == "hello from ZoZoDe"
-    assert args.host == "127.0.0.1"
+    assert args.join is None
     assert args.port == 2806
 
 
-def test_server_defaults_to_lan_bind_port():
-    args = build_server_parser().parse_args([])
+def test_zozode_join_sets_client_host():
+    args = build_parser().parse_args(["--join", "192.168.1.10"])
 
-    assert args.host == "0.0.0.0"
+    assert args.join == "192.168.1.10"
     assert args.port == 2806

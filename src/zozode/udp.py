@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
+from typing import Any
 
 import anyio
 
 from zozode.config import UdpConfig
 
 MessageHandler = Callable[[bytes, tuple[str, int]], bytes | None]
+JsonMessage = dict[str, Any]
 
 
 async def send_message_async(message: str, config: UdpConfig) -> None:
@@ -43,3 +46,15 @@ async def serve_async(config: UdpConfig, handler: MessageHandler | None = None) 
 
 def serve(config: UdpConfig, handler: MessageHandler | None = None) -> None:
     anyio.run(serve_async, config, handler)
+
+
+def encode_json(message: JsonMessage, encoding: str = "utf-8") -> bytes:
+    return json.dumps(message, separators=(",", ":")).encode(encoding)
+
+
+def decode_json(data: bytes, encoding: str = "utf-8") -> JsonMessage:
+    message = json.loads(data.decode(encoding))
+    if not isinstance(message, dict):
+        msg = "UDP JSON message must be an object"
+        raise ValueError(msg)
+    return message
