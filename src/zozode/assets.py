@@ -12,7 +12,7 @@ ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets"
 class WeaponConfig:
     name: str
     rps: float
-    ammo: int
+    magazine: int
     reload_time: float
     spread: float
     is_holdable: bool
@@ -41,7 +41,7 @@ def load_default_weapon() -> WeaponConfig:
     return WeaponConfig(
         name=str(weapon_payload.get("name", default_name)),
         rps=float(weapon_payload["rps"]),
-        ammo=int(weapon_payload["ammo"]),
+        magazine=int(weapon_payload["magazine"]),
         reload_time=float(weapon_payload.get("reloadTime", 1.5)),
         spread=float(weapon_payload.get("spread", 0)),
         is_holdable=bool(weapon_payload.get("isHoldable", False)),

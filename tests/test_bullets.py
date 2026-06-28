@@ -5,7 +5,7 @@ from zozode.player import Player
 TEST_WEAPON = WeaponConfig(
     name="Test",
     rps=5,
-    ammo=10,
+    magazine=10,
     reload_time=1.5,
     spread=0,
     is_holdable=False,
@@ -75,7 +75,7 @@ def test_maybe_spawn_bullet_uses_on_success_shoot_as_single_success_gate():
     assert next_shot_at == 0.0
 
 
-def test_maybe_spawn_bullet_does_not_decrease_ammo_when_player_is_dead():
+def test_maybe_spawn_bullet_does_not_decrease_magazine_when_player_is_dead():
     called = []
 
     def on_success_shoot():
@@ -100,7 +100,7 @@ def test_spawn_bullet_applies_weapon_spread(monkeypatch):
     weapon = WeaponConfig(
         name="Spread",
         rps=5,
-        ammo=10,
+        magazine=10,
         reload_time=1.5,
         spread=0.5,
         is_holdable=False,

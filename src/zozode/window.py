@@ -7,7 +7,7 @@ from typing import Any
 
 import pygame
 
-from zozode.ammo import AmmoState, consume_ammo, refresh_reload, start_reload
+from zozode.magazine import MagazineState, consume_magazine, refresh_reload, start_reload
 from zozode.bullets import DEFAULT_WEAPON, maybe_spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
@@ -39,7 +39,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     players: dict[str, Player] = {server_id: spawn_player(server_id)}
     peers: dict[str, tuple[str, int]] = {}
     next_shot_at: dict[str, float] = {server_id: 0.0}
-    ammo = AmmoState(DEFAULT_WEAPON)
+        magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     next_enemy_spawn_at = time.monotonic()
 
@@ -52,9 +52,9 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             if event.type == pygame.QUIT:
                 running = False
 
-        refresh_reload(ammo, now)
+        refresh_reload(magazine, now)
         if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
-            start_reload(ammo, now, DEFAULT_WEAPON.reload_time / 2)
+            start_reload(magazine, now, DEFAULT_WEAPON.reload_time / 2)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
@@ -66,7 +66,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
                 pygame.mouse.get_pos(),
                 now,
                 next_shot_at[server_id],
-                on_success_shoot=lambda now=now: consume_ammo(ammo, now),
+                on_success_shoot=lambda now=now: consume_magazine(magazine, now),
             )
             if bullet is not None:
                 players[server_id].bullets.append(bullet)
@@ -120,7 +120,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             players.values(),
             f"Server UDP :{port}  {difficulty_name}  FF {ff}  click shoots",
             enemies,
-            ammo,
+            magazine,
         )
 
     sock.close()
@@ -188,7 +188,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     local_player.y = HEIGHT / 2
     players: dict[str, Player] = {player_id: local_player}
     next_shot_at = 0.0
-    ammo = AmmoState(DEFAULT_WEAPON)
+    magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     send(sock, server, {"type": "join", "id": player_id})
 
@@ -202,9 +202,9 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             if event.type == pygame.QUIT:
                 running = False
 
-        refresh_reload(ammo, now)
+        refresh_reload(magazine, now)
         if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
-            start_reload(ammo, now, DEFAULT_WEAPON.reload_time / 2)
+            start_reload(magazine, now, DEFAULT_WEAPON.reload_time / 2)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
@@ -216,7 +216,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
                 mouse_pos,
                 now,
                 next_shot_at,
-                on_success_shoot=lambda now=now: consume_ammo(ammo, now),
+                on_success_shoot=lambda now=now: consume_magazine(magazine, now),
             )
             if bullet is not None:
                 local_player.bullets.append(bullet)
@@ -252,7 +252,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
 
-        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies, ammo)
+        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies, magazine)
 
     sock.close()
     pygame.quit()

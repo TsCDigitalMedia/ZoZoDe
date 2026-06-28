@@ -6,7 +6,7 @@ from collections.abc import Iterable
 
 import pygame
 
-from zozode.ammo import AmmoState, reload_progress
+from zozode.magazine import MagazineState, reload_progress
 from zozode.constants import BULLET_RADIUS, DOT_RADIUS, ENEMY_RADIUS, HEIGHT
 from zozode.player import Enemy, Player
 
@@ -17,7 +17,7 @@ def draw(
     players: Iterable[Player],
     status: str,
     enemies: Iterable[Enemy] = (),
-    ammo: AmmoState | None = None,
+    magazine: MagazineState | None = None,
 ) -> None:
     now = time.monotonic()
     screen.fill((20, 20, 24))
@@ -46,20 +46,20 @@ def draw(
         pygame.draw.circle(screen, player.color, (round(player.x), round(player.y)), DOT_RADIUS)
         health = font.render(str(player.health), True, (240, 240, 240))
         screen.blit(health, (round(player.x) - 5, round(player.y) - 30))
-    if ammo is not None:
-        draw_ammo(screen, ammo, now)
+    if magazine is not None:
+        draw_magazine(screen, magazine, now)
     text = font.render(status, True, (230, 230, 230))
     screen.blit(text, (12, 12))
     pygame.display.flip()
 
 
-def draw_ammo(screen: pygame.Surface, ammo: AmmoState, now: float) -> None:
+def draw_magazine(screen: pygame.Surface, magazine: MagazineState, now: float) -> None:
     center = (44, HEIGHT - 44)
     radius = 24
     rect = pygame.Rect(center[0] - radius, center[1] - radius, radius * 2, radius * 2)
     pygame.draw.circle(screen, (70, 70, 76), center, radius, 2)
-    if ammo.reload_started_at:
-        progress = reload_progress(ammo, now)
+    if magazine.reload_started_at:
+        progress = reload_progress(magazine, now)
         pygame.draw.arc(
             screen,
             (240, 240, 240),
@@ -70,8 +70,8 @@ def draw_ammo(screen: pygame.Surface, ammo: AmmoState, now: float) -> None:
         )
         return
 
-    count = max(1, ammo.weapon.ammo)
-    remaining = max(0, ammo.remaining or 0)
+    count = max(1, magazine.weapon.magazine)
+    remaining = max(0, magazine.remaining or 0)
     gap = 0.08
     segment = max(0.02, (math.tau / count) - gap)
     for index in range(count):

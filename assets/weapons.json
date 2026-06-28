@@ -3,7 +3,7 @@
     "pistol": {
         "name": "Pistol",
         "rps": 5,
-        "ammo": 10,
+        "magazine": 10,
         "reloadTime": 1.2,
         "spread": 0.2,
         "isHoldable": false
@@ -11,7 +11,7 @@
     "rifle": {
         "name": "Rifle",
         "rps": 8,
-        "ammo": 30,
+        "magazine": 30,
         "reloadTime": 1.8,
         "spread": 0.28,
         "isHoldable": true
@@ -19,7 +19,7 @@
     "lmg": {
         "name": "Light Machine Gun",
         "rps": 10,
-        "ammo": 30,
+        "magazine": 30,
         "reloadTime": 2.2,
         "spread": 0.5,
         "isHoldable": true
