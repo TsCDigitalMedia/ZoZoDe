@@ -12,6 +12,10 @@ from zozode.player import Bullet, Player
 DEFAULT_WEAPON = load_default_weapon()
 
 
+def default_on_success_shoot() -> bool:
+    return True
+
+
 def spawn_bullet(
     player: Player,
     mouse_pos: tuple[int, int],
@@ -38,8 +42,11 @@ def maybe_spawn_bullet(
     now: float,
     next_shot_at: float,
     weapon: WeaponConfig = DEFAULT_WEAPON,
+    on_success_shoot=default_on_success_shoot,
 ) -> tuple[Bullet | None, float]:
     if not player.alive or now < next_shot_at:
+        return None, next_shot_at
+    if not on_success_shoot():
         return None, next_shot_at
     return spawn_bullet(player, mouse_pos, weapon), now + weapon.shot_interval_seconds
 

@@ -58,12 +58,13 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
         )
         wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
-        if wants_shot and now >= next_shot_at[server_id] and consume_ammo(ammo, now):
+        if wants_shot:
             bullet, next_shot_at[server_id] = maybe_spawn_bullet(
                 players[server_id],
                 pygame.mouse.get_pos(),
                 now,
                 next_shot_at[server_id],
+                on_success_shoot=lambda now=now: consume_ammo(ammo, now),
             )
             if bullet is not None:
                 players[server_id].bullets.append(bullet)
@@ -205,12 +206,13 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
         )
         wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
-        if wants_shot and now >= next_shot_at and consume_ammo(ammo, now):
+        if wants_shot:
             bullet, next_shot_at = maybe_spawn_bullet(
                 local_player,
                 mouse_pos,
                 now,
                 next_shot_at,
+                on_success_shoot=lambda now=now: consume_ammo(ammo, now),
             )
             if bullet is not None:
                 local_player.bullets.append(bullet)
