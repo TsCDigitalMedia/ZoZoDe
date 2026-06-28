@@ -27,10 +27,10 @@ Join from another machine on the same LAN:
 uv run zozode --join <server-ip>
 ```
 
-Use a custom UDP port when needed:
+Use a custom UDP port or host sword length when needed:
 
 ```bash
-uv run zozode --port 2807
+uv run zozode --port 2807 --max-length 180
 uv run zozode --join <server-ip> --port 2807
 ```
 
@@ -40,8 +40,9 @@ uv run zozode --join <server-ip> --port 2807
 - `A` moves left
 - `S` moves down
 - `D` moves right
+- Mouse aims the sword line from your dot
 
-Each joining client is assigned a random dot color by the server. Movement is sent over UDP.
+Each player has a random dot color and sword color. The host caps sword length with `--max-length`. A sword hit removes one health. Hit players blink for two seconds and are invulnerable while blinking. Dead players respawn after two seconds.
 
 ## Test and lint
 
