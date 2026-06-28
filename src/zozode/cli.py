@@ -27,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def add_udp_options(parser: argparse.ArgumentParser, *, host_help: str, port_help: str) -> None:
-    parser.add_argument("--host", default="127.0.0.1", help=host_help)
+    parser.add_argument("--host", default=None, help=host_help)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help=port_help)
     parser.add_argument("--buffer-size", type=int, default=65_507, help="receive buffer size")
     parser.add_argument("--encoding", default="utf-8", help="text encoding")
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "server":
         return server_main([
             "--host",
-            args.host,
+            args.host or "0.0.0.0",
             "--port",
             str(args.port),
             "--buffer-size",
@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         return client_main([
             args.message,
             "--host",
-            args.host,
+            args.host or "127.0.0.1",
             "--port",
             str(args.port),
             "--buffer-size",

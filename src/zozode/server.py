@@ -9,7 +9,7 @@ from zozode.udp import serve
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="zozode-server", description="Run the ZoZoDe UDP server")
-    parser.add_argument("--host", default="127.0.0.1", help="UDP host/address to bind")
+    parser.add_argument("--host", default="0.0.0.0", help="UDP host/address to bind")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="UDP port to bind")
     parser.add_argument("--buffer-size", type=int, default=65_507, help="receive buffer size")
     parser.add_argument("--encoding", default="utf-8", help="text encoding")

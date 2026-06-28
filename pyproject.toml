@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "A simple pixel game that can be play multiplayer using LAN"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "anyio>=4.0",
+]
 
 [project.scripts]
 zozode = "zozode.client:main"

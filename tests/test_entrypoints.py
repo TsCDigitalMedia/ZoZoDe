@@ -10,8 +10,8 @@ def test_client_defaults_to_message_for_simple_run():
     assert args.port == 2806
 
 
-def test_server_defaults_to_localhost_port():
+def test_server_defaults_to_lan_bind_port():
     args = build_server_parser().parse_args([])
 
-    assert args.host == "127.0.0.1"
+    assert args.host == "0.0.0.0"
     assert args.port == 2806

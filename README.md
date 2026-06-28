@@ -38,7 +38,7 @@ uv run zozode "hello from client"
 Use LAN binding when another machine needs to connect:
 
 ```bash
-uv run zozode-server --host 0.0.0.0 --port 2806
+uv run zozode-server --port 2806
 uv run zozode "hello over LAN" --host <server-ip> --port 2806
 ```
 
