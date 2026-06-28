@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 
 from zozode.config import DEFAULT_PORT
-from zozode.window import MAX_LENGTH, run_client, run_server
+from zozode.constants import MAX_LENGTH
+from zozode.window import run_client, run_server
 
 
 def build_parser() -> argparse.ArgumentParser:
