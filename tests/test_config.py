@@ -1,6 +1,11 @@
 import pytest
 
-from zozode.config import UdpConfig
+from zozode.config import DEFAULT_PORT, UdpConfig
+
+
+def test_default_port_is_2806():
+    assert DEFAULT_PORT == 2806
+    assert UdpConfig().port == 2806
 
 
 def test_address_returns_host_port_tuple():

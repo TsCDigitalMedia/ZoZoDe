@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from zozode.config import UdpConfig
+from zozode.config import DEFAULT_PORT, UdpConfig
 from zozode.udp import send_message
 
 
@@ -16,7 +16,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="message text to send",
     )
     parser.add_argument("--host", default="127.0.0.1", help="UDP server host/address")
-    parser.add_argument("--port", type=int, default=9999, help="UDP server port")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="UDP server port")
     parser.add_argument("--buffer-size", type=int, default=65_507, help="receive buffer size")
     parser.add_argument("--encoding", default="utf-8", help="text encoding")
     return parser

@@ -1,12 +1,12 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
+
+DEFAULT_PORT = 2806
 
 
 @dataclass(frozen=True, slots=True)
 class UdpConfig:
     host: str = "127.0.0.1"
-    port: int = 9999
+    port: int = DEFAULT_PORT
     buffer_size: int = 65_507
     encoding: str = "utf-8"
 

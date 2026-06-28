@@ -15,13 +15,15 @@ uv sync
 
 ## Run
 
-Start the UDP server:
+Start the UDP server on the default UDP port `2806`:
 
 ```bash
 uv run zozode-server
 ```
 
-Run the UDP client:
+The server automatically tries to allow the UDP port through the platform firewall when supported. Use `--no-firewall` to skip that step.
+
+Run the UDP client against the default UDP port `2806`:
 
 ```bash
 uv run zozode
@@ -36,8 +38,8 @@ uv run zozode "hello from client"
 Use LAN binding when another machine needs to connect:
 
 ```bash
-uv run zozode-server --host 0.0.0.0 --port 9999
-uv run zozode "hello over LAN" --host <server-ip> --port 9999
+uv run zozode-server --host 0.0.0.0 --port 2806
+uv run zozode "hello over LAN" --host <server-ip> --port 2806
 ```
 
 Compatibility commands are also available:
@@ -63,6 +65,7 @@ src/zozode/
   server.py        server entrypoint for `uv run zozode-server`
   cli.py           compatibility command router
   config.py        UDP configuration model
+  firewall.py      multi-platform firewall allow helper
   udp.py           UDP send/server primitives
 tests/
   test_config.py   config tests
