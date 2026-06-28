@@ -7,7 +7,7 @@ from typing import Any
 
 import pygame
 
-from zozode.bullets import maybe_spawn_bullet, step_bullets
+from zozode.bullets import DEFAULT_WEAPON, maybe_spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
 from zozode.constants import CLIENT_HOST, DIFFICULTY_NAMES, FPS, HEIGHT, SERVER_HOST, WIDTH
@@ -45,11 +45,16 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     while running:
         dt = clock.tick(FPS) / 1000
         now = time.monotonic()
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
 
-        if pygame.mouse.get_pressed()[0]:
+        mouse_pressed = pygame.mouse.get_pressed()[0]
+        mouse_clicked = any(
+            event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
+        )
+        if mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked:
             bullet, next_shot_at[server_id] = maybe_spawn_bullet(
                 players[server_id],
                 pygame.mouse.get_pos(),
@@ -182,11 +187,16 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     while running:
         dt = clock.tick(FPS) / 1000
         mouse_pos = pygame.mouse.get_pos()
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
 
-        if pygame.mouse.get_pressed()[0]:
+        mouse_pressed = pygame.mouse.get_pressed()[0]
+        mouse_clicked = any(
+            event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
+        )
+        if mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked:
             bullet, next_shot_at = maybe_spawn_bullet(
                 local_player,
                 mouse_pos,

@@ -1,0 +1,7 @@
+{
+    "basic": {
+        "health": 1,
+        "speed": 200,
+        "size": 20
+    }
+}

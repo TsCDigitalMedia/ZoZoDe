@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import random
 
+from zozode.assets import load_basic_enemy
 from zozode.combat import damage_player
 from zozode.constants import (
     BULLET_RADIUS,
@@ -10,7 +11,6 @@ from zozode.constants import (
     ENEMY_BASE_SPAWN_SECONDS,
     ENEMY_RADIUS,
     ENEMY_SPAWN_SPEED_STEP,
-    ENEMY_SPEED,
     ENEMY_SPEED_STEP,
     ENEMY_TARGET_SECONDS,
     HEIGHT,
@@ -20,9 +20,11 @@ from zozode.geometry import unit_vector
 from zozode.player import Enemy, Player
 from zozode.player_state import spawn_enemy
 
+ENEMY_CONFIG = load_basic_enemy()
+
 
 def enemy_speed(difficulty: int) -> float:
-    return ENEMY_SPEED * (1 + max(DIFFICULTY_EASY, difficulty) * ENEMY_SPEED_STEP)
+    return ENEMY_CONFIG.speed * (1 + max(DIFFICULTY_EASY, difficulty) * ENEMY_SPEED_STEP)
 
 
 def enemy_spawn_seconds(difficulty: int) -> float:

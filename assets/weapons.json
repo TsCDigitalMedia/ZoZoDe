@@ -1,0 +1,17 @@
+{
+    "default_weapon": "Pistol",
+    "pistol": {
+        "name": "Pistol",
+        "rps": 5,
+        "ammo": 10,
+        "spread": 0.2,
+        "isHoldable": false
+    },
+    "rifle": {
+        "name": "Rifle",
+        "rps": 10,
+        "ammo": 30,
+        "spread": 0.5,
+        "isHoldable": true
+    }
+}

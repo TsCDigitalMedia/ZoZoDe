@@ -7,10 +7,13 @@ import uuid
 from dataclasses import asdict
 from typing import Any
 
+from zozode.assets import load_basic_enemy
 from zozode.colors import random_color
 from zozode.constants import DOT_RADIUS, ENEMY_RADIUS, HEALTH, HEIGHT, WIDTH
 from zozode.geometry import unit_vector
 from zozode.player import Bullet, Enemy, Player
+
+ENEMY_CONFIG = load_basic_enemy()
 
 
 def spawn_player(name: str) -> Player:
@@ -51,7 +54,15 @@ def spawn_enemy(players: dict[str, Player]) -> Enemy | None:
     ]
     target = random.choice(nearest_targets)
     vx, vy = unit_vector(x, y, target.x, target.y)
-    return Enemy(id=uuid.uuid4().hex, x=x, y=y, vx=vx, vy=vy, target=target.name)
+    return Enemy(
+        id=uuid.uuid4().hex,
+        x=x,
+        y=y,
+        vx=vx,
+        vy=vy,
+        target=target.name,
+        health=ENEMY_CONFIG.health,
+    )
 
 
 def bullet_payload(bullet: Bullet) -> dict[str, Any]:
