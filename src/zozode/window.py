@@ -39,7 +39,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     players: dict[str, Player] = {server_id: spawn_player(server_id)}
     peers: dict[str, tuple[str, int]] = {}
     next_shot_at: dict[str, float] = {server_id: 0.0}
-        magazine = MagazineState(DEFAULT_WEAPON)
+    magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     next_enemy_spawn_at = time.monotonic()
 
