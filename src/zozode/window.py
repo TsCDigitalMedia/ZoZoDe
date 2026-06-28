@@ -7,7 +7,7 @@ from typing import Any
 
 import pygame
 
-from zozode.bullets import maybe_spawn_bullet, spawn_bullet, step_bullets
+from zozode.bullets import maybe_spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
 from zozode.constants import CLIENT_HOST, DIFFICULTY_NAMES, FPS, HEIGHT, SERVER_HOST, WIDTH
@@ -37,6 +37,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     server_id = "server"
     players: dict[str, Player] = {server_id: spawn_player(server_id)}
     peers: dict[str, tuple[str, int]] = {}
+    next_shot_at: dict[str, float] = {server_id: 0.0}
     enemies: list[Enemy] = []
     next_enemy_spawn_at = time.monotonic()
 
@@ -47,10 +48,16 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                bullet = maybe_spawn_bullet(players[server_id], event.pos)
-                if bullet is not None:
-                    players[server_id].bullets.append(bullet)
+
+        if pygame.mouse.get_pressed()[0]:
+            bullet, next_shot_at[server_id] = maybe_spawn_bullet(
+                players[server_id],
+                pygame.mouse.get_pos(),
+                now,
+                next_shot_at[server_id],
+            )
+            if bullet is not None:
+                players[server_id].bullets.append(bullet)
 
         reset_finished_blinks(players, now)
         respawn_dead_players(players, now)
@@ -61,10 +68,11 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             kind = message.get("type")
             if kind == "join":
                 accept_player(sock, address, message, players, peers)
+                next_shot_at[str(message.get("id") or "")] = 0.0
             elif kind == "move":
                 update_remote_player(message, players)
             elif kind == "shoot":
-                spawn_remote_bullet(message, players)
+                spawn_remote_bullet(message, players, next_shot_at, now)
 
         step_bullets(players, dt)
         handle_hits(players, now, friendly_fire)
@@ -90,6 +98,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         for player_id in disconnected:
             peers.pop(player_id, None)
             players.pop(player_id, None)
+            next_shot_at.pop(player_id, None)
 
         difficulty_name = DIFFICULTY_NAMES.get(difficulty, str(difficulty))
         ff = "on" if friendly_fire else "off"
@@ -128,7 +137,12 @@ def accept_player(
         players.pop(player_id, None)
 
 
-def spawn_remote_bullet(message: dict[str, Any], players: dict[str, Player]) -> None:
+def spawn_remote_bullet(
+    message: dict[str, Any],
+    players: dict[str, Player],
+    next_shot_at: dict[str, float],
+    now: float,
+) -> None:
     player_id = str(message.get("id"))
     if player_id not in players or not players[player_id].alive:
         return
@@ -136,7 +150,14 @@ def spawn_remote_bullet(message: dict[str, Any], players: dict[str, Player]) -> 
         int(message.get("mouse_x", players[player_id].indicator_x)),
         int(message.get("mouse_y", players[player_id].indicator_y)),
     )
-    players[player_id].bullets.append(spawn_bullet(players[player_id], mouse_pos))
+    bullet, next_shot_at[player_id] = maybe_spawn_bullet(
+        players[player_id],
+        mouse_pos,
+        now,
+        next_shot_at.get(player_id, 0.0),
+    )
+    if bullet is not None:
+        players[player_id].bullets.append(bullet)
 
 
 def run_client(host: str, port: int = DEFAULT_PORT) -> None:
@@ -153,6 +174,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     local_player.x = WIDTH / 2
     local_player.y = HEIGHT / 2
     players: dict[str, Player] = {player_id: local_player}
+    next_shot_at = 0.0
     enemies: list[Enemy] = []
     send(sock, server, {"type": "join", "id": player_id})
 
@@ -163,20 +185,26 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                bullet = maybe_spawn_bullet(local_player, event.pos)
-                if bullet is not None:
-                    local_player.bullets.append(bullet)
-                    send(
-                        sock,
-                        server,
-                        {
-                            "type": "shoot",
-                            "id": player_id,
-                            "mouse_x": event.pos[0],
-                            "mouse_y": event.pos[1],
-                        },
-                    )
+
+        if pygame.mouse.get_pressed()[0]:
+            bullet, next_shot_at = maybe_spawn_bullet(
+                local_player,
+                mouse_pos,
+                time.monotonic(),
+                next_shot_at,
+            )
+            if bullet is not None:
+                local_player.bullets.append(bullet)
+                send(
+                    sock,
+                    server,
+                    {
+                        "type": "shoot",
+                        "id": player_id,
+                        "mouse_x": mouse_pos[0],
+                        "mouse_y": mouse_pos[1],
+                    },
+                )
 
         keys = pygame.key.get_pressed()
         update_local_player(local_player, keys, mouse_pos, dt)

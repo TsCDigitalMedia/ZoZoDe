@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from zozode.constants import BULLET_LIFETIME, BULLET_SPEED, HEIGHT, WIDTH
+from zozode.constants import BULLET_LIFETIME, BULLET_SPEED, HEIGHT, SHOT_INTERVAL_SECONDS, WIDTH
 from zozode.geometry import unit_vector
 from zozode.player import Bullet, Player
 
@@ -19,10 +19,15 @@ def spawn_bullet(player: Player, mouse_pos: tuple[int, int]) -> Bullet:
     )
 
 
-def maybe_spawn_bullet(player: Player, mouse_pos: tuple[int, int]) -> Bullet | None:
-    if not player.alive:
-        return None
-    return spawn_bullet(player, mouse_pos)
+def maybe_spawn_bullet(
+    player: Player,
+    mouse_pos: tuple[int, int],
+    now: float,
+    next_shot_at: float,
+) -> tuple[Bullet | None, float]:
+    if not player.alive or now < next_shot_at:
+        return None, next_shot_at
+    return spawn_bullet(player, mouse_pos), now + SHOT_INTERVAL_SECONDS
 
 
 def step_bullets(players: dict[str, Player], dt: float) -> None:
