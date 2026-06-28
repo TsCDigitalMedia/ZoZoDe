@@ -18,7 +18,7 @@ DOT_RADIUS = 10
 SPEED = 220
 FPS = 60
 SERVER_HOST = "0.0.0.0"
-LOCALHOST = "127.0.0.1"
+CLIENT_HOST = "0.0.0.0"
 
 
 def random_color() -> tuple[int, int, int]:
@@ -36,8 +36,13 @@ def make_socket(host: str, port: int) -> socket.socket:
     return sock
 
 
-def send(sock: socket.socket, address: tuple[str, int], message: dict[str, Any]) -> None:
-    sock.sendto(encode_json(message), address)
+def send(sock: socket.socket, address: tuple[str, int], message: dict[str, Any]) -> bool:
+    try:
+        sock.sendto(encode_json(message), address)
+    except OSError as error:
+        print(f"UDP send failed to {address[0]}:{address[1]}: {error}")
+        return False
+    return True
 
 
 def receive_all(sock: socket.socket) -> list[tuple[dict[str, Any], tuple[str, int]]]:
@@ -105,8 +110,13 @@ def run_server(port: int = DEFAULT_PORT) -> None:
             "type": "state",
             "players": [player_payload(player) for player in players.values()],
         }
-        for address in peers.values():
-            send(sock, address, state)
+        disconnected = []
+        for player_id, address in peers.items():
+            if not send(sock, address, state):
+                disconnected.append(player_id)
+        for player_id in disconnected:
+            peers.pop(player_id, None)
+            players.pop(player_id, None)
 
         draw(screen, font, players.values(), f"Server UDP :{port}  WASD moves server dot")
 
@@ -129,7 +139,7 @@ def accept_player(
         random.randint(DOT_RADIUS, HEIGHT - DOT_RADIUS),
         random_color(),
     )
-    send(
+    if not send(
         sock,
         address,
         {
@@ -137,7 +147,9 @@ def accept_player(
             "id": player_id,
             "players": list(map(player_payload, players.values())),
         },
-    )
+    ):
+        peers.pop(player_id, None)
+        players.pop(player_id, None)
 
 
 def update_remote_player(message: dict[str, Any], players: dict[str, Player]) -> None:
@@ -156,7 +168,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 24)
 
-    sock = make_socket(LOCALHOST, 0)
+    sock = make_socket(CLIENT_HOST, 0)
     server = (host, port)
     player_id = uuid.uuid4().hex
     local_player = Player(player_id, WIDTH / 2, HEIGHT / 2, random_color())
