@@ -7,7 +7,7 @@ from typing import Any
 
 import pygame
 
-from zozode.ammo import AmmoState, consume_ammo, refresh_reload
+from zozode.ammo import AmmoState, consume_ammo, refresh_reload, start_reload
 from zozode.bullets import DEFAULT_WEAPON, maybe_spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
@@ -53,6 +53,8 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
                 running = False
 
         refresh_reload(ammo, now)
+        if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
+            start_reload(ammo, now, DEFAULT_WEAPON.reload_time / 2)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
@@ -201,6 +203,8 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
                 running = False
 
         refresh_reload(ammo, now)
+        if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
+            start_reload(ammo, now, DEFAULT_WEAPON.reload_time / 2)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
