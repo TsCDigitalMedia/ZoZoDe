@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 import pygame
 
-from zozode.constants import DOT_RADIUS
+from zozode.constants import BULLET_RADIUS, DOT_RADIUS
 from zozode.player import Player
 
 
@@ -18,6 +18,13 @@ def draw(
     now = time.monotonic()
     screen.fill((20, 20, 24))
     for player in players:
+        for bullet in player.bullets:
+            pygame.draw.circle(
+                screen,
+                player.indicator_color,
+                (round(bullet.x), round(bullet.y)),
+                BULLET_RADIUS,
+            )
         if not player.alive:
             continue
         blinking = player.invulnerable_until > now and int(now * 10) % 2 == 0
@@ -25,10 +32,10 @@ def draw(
             continue
         pygame.draw.line(
             screen,
-            player.sword_color,
+            player.indicator_color,
             (round(player.x), round(player.y)),
-            (round(player.sword_x), round(player.sword_y)),
-            4,
+            (round(player.indicator_x), round(player.indicator_y)),
+            3,
         )
         pygame.draw.circle(screen, player.color, (round(player.x), round(player.y)), DOT_RADIUS)
         health = font.render(str(player.health), True, (240, 240, 240))

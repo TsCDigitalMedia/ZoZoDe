@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+@dataclass(slots=True)
+class Bullet:
+    id: str
+    owner: str
+    x: float
+    y: float
+    vx: float
+    vy: float
+    age: float = 0.0
 
 
 @dataclass(slots=True)
@@ -9,10 +20,11 @@ class Player:
     x: float
     y: float
     color: tuple[int, int, int]
-    sword_color: tuple[int, int, int]
-    sword_x: float
-    sword_y: float
+    indicator_color: tuple[int, int, int]
+    indicator_x: float
+    indicator_y: float
     health: int
     invulnerable_until: float = 0.0
     respawn_at: float = 0.0
     alive: bool = True
+    bullets: list[Bullet] = field(default_factory=list)

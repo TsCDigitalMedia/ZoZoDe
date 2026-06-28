@@ -7,17 +7,18 @@ from typing import Any
 
 import pygame
 
+from zozode.bullets import spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
-from zozode.constants import CLIENT_HOST, FPS, HEIGHT, MAX_LENGTH, SERVER_HOST, WIDTH
-from zozode.movement import update_local_player, update_remote_player
+from zozode.constants import CLIENT_HOST, FPS, HEIGHT, SERVER_HOST, WIDTH
+from zozode.movement import lerp_remote_player, update_local_player, update_remote_player
 from zozode.network import make_socket, receive_all, send
 from zozode.player import Player
 from zozode.player_state import copy_player_state, player_from_payload, player_payload, spawn_player
 from zozode.render import draw
 
 
-def run_server(port: int = DEFAULT_PORT, max_length: float = MAX_LENGTH) -> None:
+def run_server(port: int = DEFAULT_PORT) -> None:
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('ZoZoDe server')
@@ -36,23 +37,27 @@ def run_server(port: int = DEFAULT_PORT, max_length: float = MAX_LENGTH) -> None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                players[server_id].bullets.append(spawn_bullet(players[server_id], event.pos))
 
         reset_finished_blinks(players, now)
         respawn_dead_players(players, now)
         keys = pygame.key.get_pressed()
-        update_local_player(players[server_id], keys, pygame.mouse.get_pos(), dt, max_length)
+        update_local_player(players[server_id], keys, pygame.mouse.get_pos(), dt)
 
         for message, address in receive_all(sock):
             kind = message.get('type')
             if kind == 'join':
-                accept_player(sock, address, message, players, peers, max_length)
+                accept_player(sock, address, message, players, peers)
             elif kind == 'move':
-                update_remote_player(message, players, max_length)
+                update_remote_player(message, players)
+            elif kind == 'shoot':
+                spawn_remote_bullet(message, players)
 
+        step_bullets(players, dt)
         handle_hits(players, now)
         state = {
             'type': 'state',
-            'max_length': max_length,
             'players': [player_payload(player) for player in players.values()],
         }
         disconnected = []
@@ -63,7 +68,7 @@ def run_server(port: int = DEFAULT_PORT, max_length: float = MAX_LENGTH) -> None
             peers.pop(player_id, None)
             players.pop(player_id, None)
 
-        draw(screen, font, players.values(), f'Server UDP :{port}  mouse aims sword')
+        draw(screen, font, players.values(), f'Server UDP :{port}  click shoots')
 
     sock.close()
     pygame.quit()
@@ -75,7 +80,6 @@ def accept_player(
     message: dict[str, Any],
     players: dict[str, Player],
     peers: dict[str, tuple[str, int]],
-    max_length: float,
 ) -> None:
     player_id = str(message.get('id') or uuid.uuid4().hex)
     peers[player_id] = address
@@ -86,12 +90,22 @@ def accept_player(
         {
             'type': 'welcome',
             'id': player_id,
-            'max_length': max_length,
             'players': list(map(player_payload, players.values())),
         },
     ):
         peers.pop(player_id, None)
         players.pop(player_id, None)
+
+
+def spawn_remote_bullet(message: dict[str, Any], players: dict[str, Player]) -> None:
+    player_id = str(message.get('id'))
+    if player_id not in players or not players[player_id].alive:
+        return
+    mouse_pos = (
+        int(message.get('mouse_x', players[player_id].indicator_x)),
+        int(message.get('mouse_y', players[player_id].indicator_y)),
+    )
+    players[player_id].bullets.append(spawn_bullet(players[player_id], mouse_pos))
 
 
 def run_client(host: str, port: int = DEFAULT_PORT) -> None:
@@ -108,19 +122,31 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     local_player.x = WIDTH / 2
     local_player.y = HEIGHT / 2
     players: dict[str, Player] = {player_id: local_player}
-    max_length = float(MAX_LENGTH)
     send(sock, server, {'type': 'join', 'id': player_id})
 
     running = True
     while running:
         dt = clock.tick(FPS) / 1000
+        mouse_pos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                local_player.bullets.append(spawn_bullet(local_player, event.pos))
+                send(
+                    sock,
+                    server,
+                    {
+                        'type': 'shoot',
+                        'id': player_id,
+                        'mouse_x': event.pos[0],
+                        'mouse_y': event.pos[1],
+                    },
+                )
 
         keys = pygame.key.get_pressed()
-        mouse_pos = pygame.mouse.get_pos()
-        update_local_player(local_player, keys, mouse_pos, dt, max_length)
+        update_local_player(local_player, keys, mouse_pos, dt)
+        step_bullets(players, dt)
         send(
             sock,
             server,
@@ -136,10 +162,9 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
 
         for message, _address in receive_all(sock):
             if message.get('type') in {'welcome', 'state'}:
-                max_length = float(message.get('max_length', max_length))
                 sync_players(message, players, player_id, local_player)
 
-        draw(screen, font, players.values(), f'Client {host}:{port}  mouse aims sword')
+        draw(screen, font, players.values(), f'Client {host}:{port}  click shoots')
 
     sock.close()
     pygame.quit()
@@ -153,8 +178,10 @@ def sync_players(
 ) -> None:
     for payload in message.get('players', []):
         player = player_from_payload(payload)
-        players[player.name] = player
-    if player_id not in players:
-        return
-    copy_player_state(local_player, players[player_id])
-    players[player_id] = local_player
+        if player.name == player_id:
+            copy_player_state(local_player, player)
+            players[player_id] = local_player
+        elif player.name in players:
+            lerp_remote_player(players[player.name], player)
+        else:
+            players[player.name] = player
