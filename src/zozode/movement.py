@@ -13,16 +13,16 @@ def update_remote_player(
     message: dict[str, Any],
     players: dict[str, Player],
 ) -> None:
-    player_id = str(message.get('id'))
+    player_id = str(message.get("id"))
     if player_id not in players:
         return
     player = players[player_id]
     if not player.alive:
         return
-    player.x = clamp(float(message.get('x', player.x)), DOT_RADIUS, WIDTH - DOT_RADIUS)
-    player.y = clamp(float(message.get('y', player.y)), DOT_RADIUS, HEIGHT - DOT_RADIUS)
-    mouse_x = float(message.get('mouse_x', player.indicator_x))
-    mouse_y = float(message.get('mouse_y', player.indicator_y))
+    player.x = clamp(float(message.get("x", player.x)), DOT_RADIUS, WIDTH - DOT_RADIUS)
+    player.y = clamp(float(message.get("y", player.y)), DOT_RADIUS, HEIGHT - DOT_RADIUS)
+    mouse_x = float(message.get("mouse_x", player.indicator_x))
+    mouse_y = float(message.get("mouse_y", player.indicator_y))
     player.indicator_x, player.indicator_y = indicator_endpoint(
         player,
         mouse_x,

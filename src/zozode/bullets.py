@@ -19,6 +19,12 @@ def spawn_bullet(player: Player, mouse_pos: tuple[int, int]) -> Bullet:
     )
 
 
+def maybe_spawn_bullet(player: Player, mouse_pos: tuple[int, int]) -> Bullet | None:
+    if not player.alive:
+        return None
+    return spawn_bullet(player, mouse_pos)
+
+
 def step_bullets(players: dict[str, Player], dt: float) -> None:
     for player in players.values():
         active = []

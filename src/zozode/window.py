@@ -7,28 +7,38 @@ from typing import Any
 
 import pygame
 
-from zozode.bullets import spawn_bullet, step_bullets
+from zozode.bullets import maybe_spawn_bullet, spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
-from zozode.constants import CLIENT_HOST, FPS, HEIGHT, SERVER_HOST, WIDTH
+from zozode.constants import CLIENT_HOST, DIFFICULTY_NAMES, FPS, HEIGHT, SERVER_HOST, WIDTH
+from zozode.enemies import handle_enemy_hits, maybe_spawn_enemy, step_enemies
 from zozode.movement import lerp_remote_player, update_local_player, update_remote_player
 from zozode.network import make_socket, receive_all, send
-from zozode.player import Player
-from zozode.player_state import copy_player_state, player_from_payload, player_payload, spawn_player
+from zozode.player import Enemy, Player
+from zozode.player_state import (
+    copy_player_state,
+    enemy_from_payload,
+    enemy_payload,
+    player_from_payload,
+    player_payload,
+    spawn_player,
+)
 from zozode.render import draw
 
 
-def run_server(port: int = DEFAULT_PORT) -> None:
+def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: bool = False) -> None:
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption('ZoZoDe server')
+    pygame.display.set_caption("ZoZoDe server")
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 24)
 
     sock = make_socket(SERVER_HOST, port)
-    server_id = 'server'
+    server_id = "server"
     players: dict[str, Player] = {server_id: spawn_player(server_id)}
     peers: dict[str, tuple[str, int]] = {}
+    enemies: list[Enemy] = []
+    next_enemy_spawn_at = time.monotonic()
 
     running = True
     while running:
@@ -38,7 +48,9 @@ def run_server(port: int = DEFAULT_PORT) -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                players[server_id].bullets.append(spawn_bullet(players[server_id], event.pos))
+                bullet = maybe_spawn_bullet(players[server_id], event.pos)
+                if bullet is not None:
+                    players[server_id].bullets.append(bullet)
 
         reset_finished_blinks(players, now)
         respawn_dead_players(players, now)
@@ -46,19 +58,30 @@ def run_server(port: int = DEFAULT_PORT) -> None:
         update_local_player(players[server_id], keys, pygame.mouse.get_pos(), dt)
 
         for message, address in receive_all(sock):
-            kind = message.get('type')
-            if kind == 'join':
+            kind = message.get("type")
+            if kind == "join":
                 accept_player(sock, address, message, players, peers)
-            elif kind == 'move':
+            elif kind == "move":
                 update_remote_player(message, players)
-            elif kind == 'shoot':
+            elif kind == "shoot":
                 spawn_remote_bullet(message, players)
 
         step_bullets(players, dt)
-        handle_hits(players, now)
+        handle_hits(players, now, friendly_fire)
+        handle_enemy_hits(enemies, players)
+        next_enemy_spawn_at = maybe_spawn_enemy(
+            enemies,
+            players,
+            now,
+            next_enemy_spawn_at,
+            difficulty,
+        )
+        step_enemies(enemies, players, dt, now, difficulty)
         state = {
-            'type': 'state',
-            'players': [player_payload(player) for player in players.values()],
+            "type": "state",
+            "players": [player_payload(player) for player in players.values()],
+            "enemies": [enemy_payload(enemy) for enemy in enemies],
+            "difficulty": difficulty,
         }
         disconnected = []
         for player_id, address in peers.items():
@@ -68,7 +91,15 @@ def run_server(port: int = DEFAULT_PORT) -> None:
             peers.pop(player_id, None)
             players.pop(player_id, None)
 
-        draw(screen, font, players.values(), f'Server UDP :{port}  click shoots')
+        difficulty_name = DIFFICULTY_NAMES.get(difficulty, str(difficulty))
+        ff = "on" if friendly_fire else "off"
+        draw(
+            screen,
+            font,
+            players.values(),
+            f"Server UDP :{port}  {difficulty_name}  FF {ff}  click shoots",
+            enemies,
+        )
 
     sock.close()
     pygame.quit()
@@ -81,16 +112,16 @@ def accept_player(
     players: dict[str, Player],
     peers: dict[str, tuple[str, int]],
 ) -> None:
-    player_id = str(message.get('id') or uuid.uuid4().hex)
+    player_id = str(message.get("id") or uuid.uuid4().hex)
     peers[player_id] = address
     players[player_id] = spawn_player(player_id)
     if not send(
         sock,
         address,
         {
-            'type': 'welcome',
-            'id': player_id,
-            'players': list(map(player_payload, players.values())),
+            "type": "welcome",
+            "id": player_id,
+            "players": list(map(player_payload, players.values())),
         },
     ):
         peers.pop(player_id, None)
@@ -98,12 +129,12 @@ def accept_player(
 
 
 def spawn_remote_bullet(message: dict[str, Any], players: dict[str, Player]) -> None:
-    player_id = str(message.get('id'))
+    player_id = str(message.get("id"))
     if player_id not in players or not players[player_id].alive:
         return
     mouse_pos = (
-        int(message.get('mouse_x', players[player_id].indicator_x)),
-        int(message.get('mouse_y', players[player_id].indicator_y)),
+        int(message.get("mouse_x", players[player_id].indicator_x)),
+        int(message.get("mouse_y", players[player_id].indicator_y)),
     )
     players[player_id].bullets.append(spawn_bullet(players[player_id], mouse_pos))
 
@@ -111,7 +142,7 @@ def spawn_remote_bullet(message: dict[str, Any], players: dict[str, Player]) -> 
 def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption(f'ZoZoDe client -> {host}:{port}')
+    pygame.display.set_caption(f"ZoZoDe client -> {host}:{port}")
     clock = pygame.time.Clock()
     font = pygame.font.Font(None, 24)
 
@@ -122,7 +153,8 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     local_player.x = WIDTH / 2
     local_player.y = HEIGHT / 2
     players: dict[str, Player] = {player_id: local_player}
-    send(sock, server, {'type': 'join', 'id': player_id})
+    enemies: list[Enemy] = []
+    send(sock, server, {"type": "join", "id": player_id})
 
     running = True
     while running:
@@ -132,17 +164,19 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                local_player.bullets.append(spawn_bullet(local_player, event.pos))
-                send(
-                    sock,
-                    server,
-                    {
-                        'type': 'shoot',
-                        'id': player_id,
-                        'mouse_x': event.pos[0],
-                        'mouse_y': event.pos[1],
-                    },
-                )
+                bullet = maybe_spawn_bullet(local_player, event.pos)
+                if bullet is not None:
+                    local_player.bullets.append(bullet)
+                    send(
+                        sock,
+                        server,
+                        {
+                            "type": "shoot",
+                            "id": player_id,
+                            "mouse_x": event.pos[0],
+                            "mouse_y": event.pos[1],
+                        },
+                    )
 
         keys = pygame.key.get_pressed()
         update_local_player(local_player, keys, mouse_pos, dt)
@@ -151,20 +185,21 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             sock,
             server,
             {
-                'type': 'move',
-                'id': player_id,
-                'x': local_player.x,
-                'y': local_player.y,
-                'mouse_x': mouse_pos[0],
-                'mouse_y': mouse_pos[1],
+                "type": "move",
+                "id": player_id,
+                "x": local_player.x,
+                "y": local_player.y,
+                "mouse_x": mouse_pos[0],
+                "mouse_y": mouse_pos[1],
             },
         )
 
         for message, _address in receive_all(sock):
-            if message.get('type') in {'welcome', 'state'}:
+            if message.get("type") in {"welcome", "state"}:
                 sync_players(message, players, player_id, local_player)
+                sync_enemies(message, enemies)
 
-        draw(screen, font, players.values(), f'Client {host}:{port}  click shoots')
+        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies)
 
     sock.close()
     pygame.quit()
@@ -176,7 +211,7 @@ def sync_players(
     player_id: str,
     local_player: Player,
 ) -> None:
-    for payload in message.get('players', []):
+    for payload in message.get("players", []):
         player = player_from_payload(payload)
         if player.name == player_id:
             copy_player_state(local_player, player)
@@ -185,3 +220,7 @@ def sync_players(
             lerp_remote_player(players[player.name], player)
         else:
             players[player.name] = player
+
+
+def sync_enemies(message: dict[str, Any], enemies: list[Enemy]) -> None:
+    enemies[:] = [enemy_from_payload(payload) for payload in message.get("enemies", [])]

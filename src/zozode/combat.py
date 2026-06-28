@@ -7,21 +7,28 @@ from zozode.player import Bullet, Player
 from zozode.player_state import spawn_player
 
 
-def handle_hits(players: dict[str, Player], now: float) -> None:
+def handle_hits(players: dict[str, Player], now: float, friendly_fire: bool = False) -> None:
     for attacker in players.values():
         if not attacker.alive:
             continue
         active_bullets = []
         for bullet in attacker.bullets:
-            if bullet_hits_player(bullet, players, now):
+            if bullet_hits_player(bullet, players, now, friendly_fire):
                 continue
             active_bullets.append(bullet)
         attacker.bullets = active_bullets
 
 
-def bullet_hits_player(bullet: Bullet, players: dict[str, Player], now: float) -> bool:
+def bullet_hits_player(
+    bullet: Bullet,
+    players: dict[str, Player],
+    now: float,
+    friendly_fire: bool = False,
+) -> bool:
     for target in players.values():
         if target.name == bullet.owner or not target.alive or target.invulnerable_until > now:
+            continue
+        if not friendly_fire and target.name != bullet.owner:
             continue
         distance = math.hypot(target.x - bullet.x, target.y - bullet.y)
         if distance <= DOT_RADIUS + BULLET_RADIUS:

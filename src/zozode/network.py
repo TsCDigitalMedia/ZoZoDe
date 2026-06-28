@@ -17,7 +17,7 @@ def send(sock: socket.socket, address: tuple[str, int], message: dict[str, Any])
     try:
         sock.sendto(encode_json(message), address)
     except OSError as error:
-        print(f'UDP send failed to {address[0]}:{address[1]}: {error}')
+        print(f"UDP send failed to {address[0]}:{address[1]}: {error}")
         return False
     return True
 

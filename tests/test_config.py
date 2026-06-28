@@ -1,6 +1,6 @@
 import pytest
 
-from zozode.config import DEFAULT_PORT, UdpConfig
+from zozode.config import DEFAULT_PORT, UdpConfig, validate_difficulty
 
 
 def test_default_port_is_2806():
@@ -26,3 +26,14 @@ def test_validate_rejects_invalid_buffer_size():
 
     with pytest.raises(ValueError, match="buffer_size must be positive"):
         config.validate()
+
+
+def test_validate_difficulty_accepts_known_values():
+    assert validate_difficulty(0) == 0
+    assert validate_difficulty(1) == 1
+    assert validate_difficulty(2) == 2
+
+
+def test_validate_difficulty_rejects_unknown_values():
+    with pytest.raises(ValueError, match="difficulty must be 0, 1, or 2"):
+        validate_difficulty(3)

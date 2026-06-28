@@ -15,6 +15,18 @@ class Bullet:
 
 
 @dataclass(slots=True)
+class Enemy:
+    id: str
+    x: float
+    y: float
+    vx: float
+    vy: float
+    target: str
+    health: int = 1
+    target_age: float = 0.0
+
+
+@dataclass(slots=True)
 class Player:
     name: str
     x: float

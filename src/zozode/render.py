@@ -5,8 +5,8 @@ from collections.abc import Iterable
 
 import pygame
 
-from zozode.constants import BULLET_RADIUS, DOT_RADIUS
-from zozode.player import Player
+from zozode.constants import BULLET_RADIUS, DOT_RADIUS, ENEMY_RADIUS
+from zozode.player import Enemy, Player
 
 
 def draw(
@@ -14,9 +14,12 @@ def draw(
     font: pygame.font.Font,
     players: Iterable[Player],
     status: str,
+    enemies: Iterable[Enemy] = (),
 ) -> None:
     now = time.monotonic()
     screen.fill((20, 20, 24))
+    for enemy in enemies:
+        pygame.draw.circle(screen, (230, 20, 20), (round(enemy.x), round(enemy.y)), ENEMY_RADIUS)
     for player in players:
         for bullet in player.bullets:
             pygame.draw.circle(
