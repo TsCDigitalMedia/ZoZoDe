@@ -2,7 +2,14 @@ from zozode.assets import WeaponConfig
 from zozode.bullets import maybe_spawn_bullet, spawn_bullet
 from zozode.player import Player
 
-TEST_WEAPON = WeaponConfig(name="Test", rps=5, ammo=10, spread=0, is_holdable=False)
+TEST_WEAPON = WeaponConfig(
+    name="Test",
+    rps=5,
+    ammo=10,
+    reload_time=1.5,
+    spread=0,
+    is_holdable=False,
+)
 
 
 def make_player(alive: bool = True) -> Player:
@@ -48,7 +55,14 @@ def test_maybe_spawn_bullet_respects_rounds_per_second():
 
 
 def test_spawn_bullet_applies_weapon_spread(monkeypatch):
-    weapon = WeaponConfig(name="Spread", rps=5, ammo=10, spread=0.5, is_holdable=False)
+    weapon = WeaponConfig(
+        name="Spread",
+        rps=5,
+        ammo=10,
+        reload_time=1.5,
+        spread=0.5,
+        is_holdable=False,
+    )
     monkeypatch.setattr("zozode.bullets.random.uniform", lambda _low, _high: 0.5)
 
     bullet = spawn_bullet(make_player(), (110, 100), weapon)

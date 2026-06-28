@@ -7,6 +7,7 @@ from typing import Any
 
 import pygame
 
+from zozode.ammo import AmmoState, consume_ammo, refresh_reload
 from zozode.bullets import DEFAULT_WEAPON, maybe_spawn_bullet, step_bullets
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
@@ -38,6 +39,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     players: dict[str, Player] = {server_id: spawn_player(server_id)}
     peers: dict[str, tuple[str, int]] = {}
     next_shot_at: dict[str, float] = {server_id: 0.0}
+    ammo = AmmoState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     next_enemy_spawn_at = time.monotonic()
 
@@ -50,11 +52,13 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             if event.type == pygame.QUIT:
                 running = False
 
+        refresh_reload(ammo, now)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
         )
-        if mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked:
+        wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
+        if wants_shot and now >= next_shot_at[server_id] and consume_ammo(ammo, now):
             bullet, next_shot_at[server_id] = maybe_spawn_bullet(
                 players[server_id],
                 pygame.mouse.get_pos(),
@@ -113,6 +117,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             players.values(),
             f"Server UDP :{port}  {difficulty_name}  FF {ff}  click shoots",
             enemies,
+            ammo,
         )
 
     sock.close()
@@ -180,27 +185,31 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     local_player.y = HEIGHT / 2
     players: dict[str, Player] = {player_id: local_player}
     next_shot_at = 0.0
+    ammo = AmmoState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     send(sock, server, {"type": "join", "id": player_id})
 
     running = True
     while running:
         dt = clock.tick(FPS) / 1000
+        now = time.monotonic()
         mouse_pos = pygame.mouse.get_pos()
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
                 running = False
 
+        refresh_reload(ammo, now)
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
         )
-        if mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked:
+        wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
+        if wants_shot and now >= next_shot_at and consume_ammo(ammo, now):
             bullet, next_shot_at = maybe_spawn_bullet(
                 local_player,
                 mouse_pos,
-                time.monotonic(),
+                now,
                 next_shot_at,
             )
             if bullet is not None:
@@ -237,7 +246,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
 
-        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies)
+        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies, ammo)
 
     sock.close()
     pygame.quit()

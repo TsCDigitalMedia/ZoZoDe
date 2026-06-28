@@ -13,6 +13,7 @@ class WeaponConfig:
     name: str
     rps: float
     ammo: int
+    reload_time: float
     spread: float
     is_holdable: bool
 
@@ -41,6 +42,7 @@ def load_default_weapon() -> WeaponConfig:
         name=str(weapon_payload.get("name", default_name)),
         rps=float(weapon_payload["rps"]),
         ammo=int(weapon_payload["ammo"]),
+        reload_time=float(weapon_payload.get("reloadTime", 1.5)),
         spread=float(weapon_payload.get("spread", 0)),
         is_holdable=bool(weapon_payload.get("isHoldable", False)),
     )
