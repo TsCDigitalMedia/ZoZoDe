@@ -14,6 +14,7 @@ from zozode.constants import (
     DOT_RADIUS,
     ENEMY_RADIUS,
     HEIGHT,
+    WIDTH,
 )
 from zozode.magazine import MagazineState, reload_progress
 from zozode.player import Enemy, Player
@@ -27,6 +28,7 @@ def draw(
     enemies: Iterable[Enemy] = (),
     magazine: MagazineState | None = None,
     camera_player: Player | None = None,
+    score: int = 0,
 ) -> None:
     now = time.monotonic()
     offset = camera_offset(camera_player) if camera_player is not None else (0.0, 0.0)
@@ -68,6 +70,8 @@ def draw(
         draw_magazine(screen, magazine, now)
     text = font.render(status, True, (230, 230, 230))
     screen.blit(text, (12, 12))
+    score_text = font.render(f"Score {score}", True, (230, 230, 230))
+    screen.blit(score_text, (WIDTH - score_text.get_width() - 12, 12))
     pygame.display.flip()
 
 

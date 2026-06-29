@@ -42,6 +42,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     next_shot_at: dict[str, float] = {server_id: 0.0}
     magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
+    score = 0
     next_enemy_spawn_at = time.monotonic()
 
     running = True
@@ -90,7 +91,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
 
         step_bullets(players, dt)
         handle_hits(players, now, friendly_fire)
-        handle_enemy_hits(enemies, players)
+        score += handle_enemy_hits(enemies, players)
         next_enemy_spawn_at = maybe_spawn_enemy(
             enemies,
             players,
@@ -104,6 +105,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             "players": [player_payload(player) for player in players.values()],
             "enemies": [enemy_payload(enemy) for enemy in enemies],
             "difficulty": difficulty,
+            "score": score,
         }
         disconnected = []
         for player_id, address in peers.items():
@@ -124,6 +126,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             enemies,
             magazine,
             players[server_id],
+            score,
         )
 
     sock.close()
@@ -193,6 +196,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     next_shot_at = 0.0
     magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
+    score = 0
     send(sock, server, {"type": "join", "id": player_id})
 
     running = True
@@ -254,6 +258,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             if message.get("type") in {"welcome", "state"}:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
+                score = int(message.get("score", score))
 
         draw(
             screen,
@@ -263,6 +268,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             enemies,
             magazine,
             local_player,
+            score,
         )
 
     sock.close()

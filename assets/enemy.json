@@ -2,6 +2,7 @@
     "basic": {
         "health": 1,
         "speed": 200,
-        "size": 20
+        "size": 20,
+        "gain": 1
     }
 }

@@ -47,14 +47,18 @@ def maybe_spawn_enemy(
     return now + enemy_spawn_seconds(difficulty)
 
 
-def handle_enemy_hits(enemies: list[Enemy], players: dict[str, Player]) -> None:
+def handle_enemy_hits(enemies: list[Enemy], players: dict[str, Player]) -> int:
+    score_gain = 0
     active_enemies = []
     for enemy in enemies:
         if bullet_hits_enemy(enemy, players):
             enemy.health = max(0, enemy.health - 1)
         if enemy.health > 0:
             active_enemies.append(enemy)
+        else:
+            score_gain += ENEMY_CONFIG.gain
     enemies[:] = active_enemies
+    return score_gain
 
 
 def bullet_hits_enemy(enemy: Enemy, players: dict[str, Player]) -> bool:

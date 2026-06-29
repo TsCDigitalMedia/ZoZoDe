@@ -35,6 +35,7 @@ class EnemyConfig:
     health: int
     speed: float
     size: int
+    gain: int
 
 
 def load_json_asset(filename: str) -> dict[str, Any]:
@@ -62,4 +63,5 @@ def load_basic_enemy() -> EnemyConfig:
         health=int(payload.get("health", 1)),
         speed=float(payload.get("speed", 200)),
         size=int(payload.get("size", 20)),
+        gain=int(payload.get("gain", 1)),
     )
