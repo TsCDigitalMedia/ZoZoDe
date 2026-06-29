@@ -5,12 +5,16 @@ from dataclasses import dataclass
 from zozode.assets import WeaponConfig
 
 
+DEFAULT_AMMO = 5
+
+
 @dataclass(slots=True)
 class MagazineState:
     weapon: WeaponConfig
     remaining: int | None = None
     reload_started_at: float = 0.0
     reload_duration: float | None = None
+    ammo: int = DEFAULT_AMMO
 
     def __post_init__(self) -> None:
         if self.remaining is None:
@@ -21,6 +25,7 @@ def reset_magazine(magazine: MagazineState) -> None:
     magazine.remaining = magazine.weapon.magazine
     magazine.reload_started_at = 0.0
     magazine.reload_duration = None
+    magazine.ammo = DEFAULT_AMMO
 
 
 def current_reload_duration(magazine: MagazineState) -> float:
@@ -42,14 +47,19 @@ def refresh_reload(magazine: MagazineState, now: float) -> None:
     if magazine.reload_started_at == 0:
         return
     if reload_progress(magazine, now) >= 1.0:
+        if magazine.ammo <= 0:
+            magazine.reload_started_at = 0.0
+            magazine.reload_duration = None
+            return
         magazine.remaining = magazine.weapon.magazine
+        magazine.ammo -= 1
         magazine.reload_started_at = 0.0
         magazine.reload_duration = None
 
 
 def start_reload(magazine: MagazineState, now: float, duration: float | None = None) -> bool:
     refresh_reload(magazine, now)
-    if magazine.reload_started_at != 0 or magazine.remaining == magazine.weapon.magazine:
+    if magazine.reload_started_at != 0 or magazine.remaining == magazine.weapon.magazine or magazine.ammo <= 0:
         return False
     magazine.reload_started_at = now
     magazine.reload_duration = duration

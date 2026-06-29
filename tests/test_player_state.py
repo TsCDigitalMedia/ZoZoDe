@@ -100,6 +100,7 @@ def test_sync_recorded_stats_resets_dead_player_actual_magazine():
     assert magazine.remaining == TEST_WEAPON.magazine
     assert magazine.reload_started_at == 0.0
     assert magazine.reload_duration is None
+    assert magazine.ammo == 5
     assert player.statistics.magazine == TEST_WEAPON.magazine
     assert player.statistics.health == 3
     assert player.statistics.score == 0

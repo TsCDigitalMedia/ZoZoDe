@@ -194,6 +194,7 @@ def draw_magazine(screen: pygame.Surface, magazine: MagazineState, now: float) -
     radius = 24
     rect = pygame.Rect(center[0] - radius, center[1] - radius, radius * 2, radius * 2)
     pygame.draw.circle(screen, (70, 70, 76), center, radius, 2)
+    draw_ammo(screen, center, radius, magazine.ammo)
     if magazine.reload_started_at:
         progress = reload_progress(magazine, now)
         pygame.draw.arc(
@@ -214,3 +215,26 @@ def draw_magazine(screen: pygame.Surface, magazine: MagazineState, now: float) -
         start = -math.pi / 2 + index * math.tau / count
         color = (240, 240, 240) if index < remaining else (70, 70, 76)
         pygame.draw.arc(screen, color, rect, start, start + segment, 4)
+
+
+def draw_ammo(screen: pygame.Surface, center: tuple[int, int], radius: int, ammo: int) -> None:
+    strip_width = 7
+    strip_height = 9
+    strip_gap = 3
+    count = 5
+    x = center[0] + radius + 8
+    top = center[1] - ((count * strip_height) + ((count - 1) * strip_gap)) // 2
+    remaining = max(0, ammo)
+    empty_count = max(0, count - remaining)
+    for index in range(count):
+        y = top + index * (strip_height + strip_gap)
+        color = (70, 70, 76) if index < empty_count else (240, 240, 240)
+        draw_cracked_ammo_cell(screen, pygame.Rect(x, y, strip_width, strip_height), color)
+
+
+def draw_cracked_ammo_cell(screen: pygame.Surface, rect: pygame.Rect, color: tuple[int, int, int]) -> None:
+    pygame.draw.line(screen, color, rect.topleft, (rect.right - 2, rect.top), 2)
+    pygame.draw.line(screen, color, (rect.right - 1, rect.top + 1), (rect.right - 1, rect.bottom - 3), 2)
+    pygame.draw.line(screen, color, (rect.right - 2, rect.bottom - 1), (rect.left + 2, rect.bottom - 1), 2)
+    pygame.draw.line(screen, color, (rect.left, rect.bottom - 3), (rect.left, rect.top + 2), 2)
+    pygame.draw.line(screen, color, (rect.left + 2, rect.top + 2), (rect.right - 3, rect.bottom - 3), 1)

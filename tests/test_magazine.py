@@ -1,5 +1,6 @@
 from zozode.assets import WeaponConfig
 from zozode.magazine import (
+    DEFAULT_AMMO,
     MagazineState,
     consume_magazine,
     refresh_reload,
@@ -45,6 +46,7 @@ def test_empty_magazine_blocks_shooting_until_reload_finishes():
     refresh_reload(magazine, 11.5)
 
     assert magazine.remaining == TEST_WEAPON.magazine
+    assert magazine.ammo == DEFAULT_AMMO - 1
     assert magazine.reload_started_at == 0.0
 
 
@@ -59,6 +61,7 @@ def test_manual_reload_uses_half_reload_time_and_blocks_shooting():
     refresh_reload(magazine, 10.75)
 
     assert magazine.remaining == TEST_WEAPON.magazine
+    assert magazine.ammo == DEFAULT_AMMO - 1
     assert magazine.reload_started_at == 0.0
     assert magazine.reload_duration is None
 
@@ -70,3 +73,13 @@ def test_manual_reload_does_nothing_when_magazine_is_full():
 
     assert magazine.remaining == TEST_WEAPON.magazine
     assert magazine.reload_started_at == 0.0
+
+
+def test_reload_is_blocked_without_ammo():
+    magazine = MagazineState(TEST_WEAPON, remaining=1, ammo=0)
+
+    assert consume_magazine(magazine, 10.0)
+
+    assert magazine.remaining == 0
+    assert magazine.reload_started_at == 0.0
+    assert not start_reload(magazine, 10.0, TEST_WEAPON.reload_time)
