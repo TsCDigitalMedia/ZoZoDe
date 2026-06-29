@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets"
+
+def _asset_root() -> Path:
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / "assets"
+    return Path(__file__).resolve().parents[2] / "assets"
+
+
+ASSETS_DIR = _asset_root()
 
 
 @dataclass(frozen=True, slots=True)

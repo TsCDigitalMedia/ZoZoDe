@@ -17,6 +17,7 @@ venv/
 build/
 dist/
 *.egg-info/
+*.spec.bak
 
 # Editors / OS
 .vscode/

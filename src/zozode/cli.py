@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 
 from zozode.config import DEFAULT_PORT, validate_difficulty
-from zozode.window import run_client, run_server
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,6 +26,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    from zozode.window import run_client, run_server
+
     if args.join:
         run_client(args.join, args.port)
     else:

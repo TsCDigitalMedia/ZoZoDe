@@ -51,3 +51,20 @@ Each player has a random dot color and indicator color. The indicator length is 
 uv run pytest
 uv run ruff check .
 ```
+
+## Release build 0.1.0
+
+Build the local platform executable with PyInstaller:
+
+```bash
+uv sync --dev
+uv run pyinstaller zozode.spec --clean --noconfirm
+```
+
+The executable is written to `dist/zozode` on Linux/macOS and `dist/zozode.exe` on Windows. The `assets/` directory is bundled into the executable.
+
+Windows, Linux, and macOS release artifacts are built by the `Release builds` GitHub Actions workflow. Push a version tag such as `v0.1.0` to publish the platform executables as release assets:
+
+- `zozode-0.1.0-win.exe`
+- `zozode-0.1.0-linux`
+- `zozode-0.1.0-mac`
