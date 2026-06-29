@@ -3,6 +3,7 @@
         "health": 1,
         "speed": 200,
         "size": 20,
+        "damage": 1,
         "gain": 1,
         "chance": 1.0
     },
@@ -10,6 +11,7 @@
         "health": 5,
         "speed": 150,
         "size": 30,
+        "damage": 2,
         "gain": 2,
         "chance": 0.5
     }

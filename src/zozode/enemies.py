@@ -136,6 +136,6 @@ def hit_player(enemy: Enemy, players: dict[str, Player], now: float) -> bool:
             continue
         distance = math.hypot(player.x - enemy.x, player.y - enemy.y)
         if distance <= ENEMY_RADIUS + 10:
-            damage_player(player, now)
+            damage_player(player, now, enemy.damage)
             return True
     return False

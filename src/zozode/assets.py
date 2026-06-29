@@ -35,6 +35,7 @@ class EnemyConfig:
     health: int
     speed: float
     size: int
+    damage: int
     gain: int
     chance: float
 
@@ -63,6 +64,7 @@ def enemy_config_from_payload(payload: dict[str, Any]) -> EnemyConfig:
         health=int(payload.get("health", 1)),
         speed=float(payload.get("speed", 200)),
         size=int(payload.get("size", 20)),
+        damage=int(payload.get("damage", 1)),
         gain=int(payload.get("gain", 1)),
         chance=float(payload.get("chance", 1.0)),
     )

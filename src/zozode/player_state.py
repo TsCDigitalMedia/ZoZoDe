@@ -68,6 +68,7 @@ def spawn_enemy(
         kind=kind,
         health=config.health,
         speed=config.speed,
+        damage=config.damage,
         gain=config.gain,
     )
 
@@ -103,6 +104,7 @@ def enemy_from_payload(payload: dict[str, Any]) -> Enemy:
         kind=str(payload.get("kind", "basic")),
         health=int(payload.get("health", 1)),
         speed=float(payload.get("speed", ENEMY_CONFIG.speed)),
+        damage=int(payload.get("damage", ENEMY_CONFIG.damage)),
         gain=int(payload.get("gain", ENEMY_CONFIG.gain)),
         target_age=float(payload.get("target_age", 0)),
     )

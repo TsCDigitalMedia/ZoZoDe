@@ -37,8 +37,8 @@ def bullet_hits_player(
     return False
 
 
-def damage_player(player: Player, now: float) -> None:
-    player.health = max(0, player.health - 1)
+def damage_player(player: Player, now: float, amount: int = 1) -> None:
+    player.health = max(0, player.health - amount)
     if player.health == 0:
         player.alive = False
         player.respawn_at = now + RESPAWN_SECONDS

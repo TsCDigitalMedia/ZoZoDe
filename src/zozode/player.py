@@ -25,6 +25,7 @@ class Enemy:
     kind: str = "basic"
     health: int = 1
     speed: float = 200.0
+    damage: int = 1
     gain: int = 1
     target_age: float = 0.0
 
