@@ -5,7 +5,7 @@ from typing import Any
 import pygame
 
 from zozode.constants import DOT_RADIUS, INDICATOR_LENGTH, SPEED
-from zozode.geometry import clamp, indicator_endpoint
+from zozode.geometry import indicator_endpoint
 from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Player
 
@@ -58,14 +58,14 @@ def update_local_player(
 
 
 def move_player_on_ground(player: Player, x: float, y: float, level: Level = DEFAULT_LEVEL) -> None:
-    x = clamp(x, DOT_RADIUS, level.width - DOT_RADIUS)
-    y = clamp(y, DOT_RADIUS, level.height - DOT_RADIUS)
     if level.can_walk(x, y, DOT_RADIUS):
         player.x = x
         player.y = y
-    elif level.can_walk(x, player.y, DOT_RADIUS):
+        return
+
+    if level.can_walk(x, player.y, DOT_RADIUS):
         player.x = x
-    elif level.can_walk(player.x, y, DOT_RADIUS):
+    if level.can_walk(player.x, y, DOT_RADIUS):
         player.y = y
 
 

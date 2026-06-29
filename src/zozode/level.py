@@ -69,6 +69,25 @@ class LevelShape:
             j = i
         return inside
 
+    def contains_circle(self, x: float, y: float, radius: float) -> bool:
+        if self.kind == "rect":
+            return (
+                self.x + radius <= x <= self.x + self.width - radius
+                and self.y + radius <= y <= self.y + self.height - radius
+            )
+        if self.kind == "circle":
+            return math.hypot(x - self.x, y - self.y) <= max(0.0, self.radius - radius)
+        return self.contains(x, y)
+
+    def overlaps_circle(self, x: float, y: float, radius: float) -> bool:
+        if self.kind == "rect":
+            closest_x = clamp(x, self.x, self.x + self.width)
+            closest_y = clamp(y, self.y, self.y + self.height)
+            return math.hypot(x - closest_x, y - closest_y) <= radius
+        if self.kind == "circle":
+            return math.hypot(x - self.x, y - self.y) <= self.radius + radius
+        return self.contains(x, y)
+
     def random_point(self) -> tuple[float, float]:
         if self.kind == "circle":
             angle = random.uniform(0, math.tau)
@@ -105,16 +124,18 @@ class Level:
     textures: tuple[LevelShape, ...] = ()
     texture_svg: str | None = None
 
-    def contains_ground(self, x: float, y: float) -> bool:
-        return any(shape.contains(x, y) for shape in self.ground)
+    def contains_ground(self, x: float, y: float, radius: float = 0.0) -> bool:
+        return any(shape.contains_circle(x, y, radius) for shape in self.ground)
 
-    def contains_obstacle(self, x: float, y: float) -> bool:
-        return any(shape.contains(x, y) for shape in self.obstacles)
+    def contains_obstacle(self, x: float, y: float, radius: float = 0.0) -> bool:
+        return any(shape.overlaps_circle(x, y, radius) for shape in self.obstacles)
 
     def can_walk(self, x: float, y: float, radius: float) -> bool:
-        x = clamp(x, radius, self.width - radius)
-        y = clamp(y, radius, self.height - radius)
-        return self.contains_ground(x, y) and not self.contains_obstacle(x, y)
+        if not radius <= x <= self.width - radius:
+            return False
+        if not radius <= y <= self.height - radius:
+            return False
+        return self.contains_ground(x, y, radius) and not self.contains_obstacle(x, y, radius)
 
     def random_player_spawn(self, radius: float) -> tuple[float, float]:
         return self._random_spawn(self.player_spawns or self.ground, radius)

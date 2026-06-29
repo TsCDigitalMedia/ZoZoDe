@@ -19,14 +19,19 @@ def make_player(name: str, x: float, y: float) -> Player:
 
 def test_spawn_enemy_targets_random_nearest_alive_player(monkeypatch):
     monkeypatch.setattr("zozode.player_state.random.randrange", lambda _limit: 0)
-    monkeypatch.setattr("zozode.player_state.random.uniform", lambda _low, _high: 10)
-
+    level = Level(
+        width=120,
+        height=120,
+        ground=(LevelShape(kind="rect", x=0, y=0, width=120, height=120),),
+        enemy_spawns=(LevelShape(kind="rect", x=10, y=10, width=0, height=0),),
+        player_spawns=(),
+    )
     players = {
         "near": make_player("near", 10, 20),
         "far": make_player("far", 700, 500),
     }
 
-    enemy = spawn_enemy(players)
+    enemy = spawn_enemy(players, level=level)
 
     assert enemy is not None
     assert enemy.target == "near"
@@ -34,8 +39,14 @@ def test_spawn_enemy_targets_random_nearest_alive_player(monkeypatch):
 
 def test_spawn_enemy_randomly_selects_between_equally_nearest_players(monkeypatch):
     monkeypatch.setattr("zozode.player_state.random.randrange", lambda _limit: 0)
-    monkeypatch.setattr("zozode.player_state.random.uniform", lambda _low, _high: 10)
     selected = []
+    level = Level(
+        width=120,
+        height=120,
+        ground=(LevelShape(kind="rect", x=0, y=0, width=120, height=120),),
+        enemy_spawns=(LevelShape(kind="rect", x=10, y=20, width=0, height=0),),
+        player_spawns=(),
+    )
 
     def choose(items):
         selected.append([item.name for item in items])
@@ -48,7 +59,7 @@ def test_spawn_enemy_randomly_selects_between_equally_nearest_players(monkeypatc
         "far": make_player("far", 700, 500),
     }
 
-    enemy = spawn_enemy(players)
+    enemy = spawn_enemy(players, level=level)
 
     assert enemy is not None
     assert selected[-1] == ["left", "right"]
@@ -63,10 +74,16 @@ def test_enemy_default_size_matches_player_size():
 
 def test_enemy_defaults_to_one_health(monkeypatch):
     monkeypatch.setattr("zozode.player_state.random.randrange", lambda _limit: 0)
-    monkeypatch.setattr("zozode.player_state.random.uniform", lambda _low, _high: 10)
+    level = Level(
+        width=120,
+        height=120,
+        ground=(LevelShape(kind="rect", x=0, y=0, width=120, height=120),),
+        enemy_spawns=(LevelShape(kind="rect", x=10, y=10, width=0, height=0),),
+        player_spawns=(),
+    )
     players = {"near": make_player("near", 10, 20)}
 
-    enemy = spawn_enemy(players)
+    enemy = spawn_enemy(players, level=level)
 
     assert enemy is not None
     assert enemy.health == 1
