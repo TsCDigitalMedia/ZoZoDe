@@ -59,6 +59,10 @@ def step_bullets(players: dict[str, Player], dt: float, level: Level = DEFAULT_L
             bullet.x += bullet.vx * dt
             bullet.y += bullet.vy * dt
             bullet.age += dt
-            if level.in_bounds(bullet.x, bullet.y) and bullet.age <= BULLET_LIFETIME:
+            if (
+                level.in_bounds(bullet.x, bullet.y)
+                and not level.contains_obstacle(bullet.x, bullet.y)
+                and bullet.age <= BULLET_LIFETIME
+            ):
                 active.append(bullet)
         player.bullets = active

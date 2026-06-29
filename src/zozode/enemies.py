@@ -107,13 +107,33 @@ def step_enemies(
                 enemy.target_age = 0
         if target is not None:
             enemy.vx, enemy.vy = unit_vector(enemy.x, enemy.y, target.x, target.y)
-        enemy.x += enemy.vx * speed * dt
-        enemy.y += enemy.vy * speed * dt
+        move_enemy_on_ground(enemy, speed * dt, level)
         if hit_player(enemy, players, now):
             continue
-        if level.in_bounds(enemy.x, enemy.y, ENEMY_RADIUS * 2):
+        if level.in_bounds(enemy.x, enemy.y, ENEMY_RADIUS * 2) and level.can_walk(
+            enemy.x,
+            enemy.y,
+            ENEMY_RADIUS,
+        ):
             active.append(enemy)
     enemies[:] = active
+
+
+def move_enemy_on_ground(enemy: Enemy, distance: float, level: Level = DEFAULT_LEVEL) -> None:
+    x = enemy.x + enemy.vx * distance
+    y = enemy.y + enemy.vy * distance
+    if level.can_walk(x, y, ENEMY_RADIUS):
+        enemy.x = x
+        enemy.y = y
+    elif level.can_walk(x, enemy.y, ENEMY_RADIUS):
+        enemy.x = x
+        enemy.vy = 0
+    elif level.can_walk(enemy.x, y, ENEMY_RADIUS):
+        enemy.y = y
+        enemy.vx = 0
+    else:
+        enemy.vx = 0
+        enemy.vy = 0
 
 
 def choose_target(enemy: Enemy, players: dict[str, Player]) -> Player | None:

@@ -42,7 +42,7 @@ def draw(
     arena_rect = pygame.Rect(round(-offset[0]), round(-offset[1]), level.width, level.height)
     pygame.draw.rect(screen, (55, 55, 64), arena_rect, 2)
     if not draw_level_texture(screen, level, offset):
-        for shape in level.textures or level.ground:
+        for shape in level.textures:
             draw_level_shape(screen, shape, offset)
     for enemy in enemies:
         pygame.draw.circle(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 import time
 import uuid
@@ -40,7 +41,13 @@ def spawn_enemy(
     if not targets:
         return None
     x, y = level.random_enemy_spawn(ENEMY_RADIUS)
-    target = random.choice(targets)
+    nearest_distance = min(math.hypot(player.x - x, player.y - y) for player in targets)
+    nearest = [
+        player
+        for player in targets
+        if math.hypot(player.x - x, player.y - y) == nearest_distance
+    ]
+    target = random.choice(nearest)
     vx, vy = unit_vector(x, y, target.x, target.y)
     return Enemy(
         id=uuid.uuid4().hex,

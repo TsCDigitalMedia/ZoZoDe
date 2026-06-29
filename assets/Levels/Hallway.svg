@@ -94,7 +94,26 @@
        y="531.85669" />
   </g>
   <g
-     id="enemySpawn">
+     id="obstacle"
+     style="display:inline;fill:#800000">
+    <rect
+       style="fill:#800000;stroke-width:1.07904"
+       id="rect6-3"
+       width="19.838345"
+       height="102.21219"
+       x="877.34351"
+       y="531.85669" />
+    <rect
+       style="fill:#800000"
+       id="rect6"
+       width="19.838345"
+       height="87.786346"
+       x="125.64285"
+       y="705.91443" />
+  </g>
+  <g
+     id="enemySpawn"
+     style="display:inline">
     <path
        style="fill:#917c6f"
        d="M 0,531.85669 V 793.70081"
@@ -105,7 +124,8 @@
        id="path2" />
   </g>
   <g
-     id="playerSpawn">
+     id="playerSpawn"
+     style="display:inline">
     <rect
        style="fill:#008000"
        id="rect2"
@@ -115,7 +135,7 @@
        y="531.85669" />
   </g>
   <g
-     id="layer4"
+     id="layer1"
      style="display:inline">
     <rect
        style="fill:#502d16"
@@ -143,5 +163,41 @@
        id="rect5"
        style="fill:#008080;stroke-width:2.22361;filter:url(#filter9)"
        d="m 46.289064,258.86133 v 204.9961 H 521.06251 v -204.9961 z m 555.167986,0 v 204.9961 h 474.77345 v -204.9961 z" />
+  </g>
+  <g
+     id="layer2"
+     style="display:inline;fill:#483e37">
+    <g
+       id="g9">
+      <path
+         style="fill:#483e37"
+         d="m 125.64285,793.70081 v -12.15266 l 5.99283,-35.957 h 8 l 5.84551,33.68386 1e-5,14.4258 z"
+         id="path7" />
+      <path
+         style="fill:#6c5d53"
+         d="m 125.64285,781.54815 v -75.63372 -12.15266 l 5.99283,-35.957 h 8 l 5.84551,33.68386 v 87.78638 l -5.84551,-33.68386 h -8 z"
+         id="path8" />
+      <path
+         style="fill:#ac9d93"
+         d="m 131.63568,657.80477 v 87.78638 h 8 v -87.78638 z"
+         id="path9" />
+    </g>
+    <g
+       id="g9-0"
+       style="fill:#483e37"
+       transform="translate(751.70065,-159.63194)">
+      <path
+         style="fill:#483e37"
+         d="m 125.64285,793.70081 v -12.15266 l 5.99283,-35.957 h 8 l 5.84551,33.68386 1e-5,14.4258 z"
+         id="path7-6" />
+      <path
+         style="fill:#6c5d53"
+         d="m 125.64285,781.54815 v -75.63372 -12.15266 l 5.99283,-35.957 h 8 l 5.84551,33.68386 v 87.78638 l -5.84551,-33.68386 h -8 z"
+         id="path8-2" />
+      <path
+         style="fill:#ac9d93"
+         d="m 131.63568,657.80477 v 87.78638 h 8 v -87.78638 z"
+         id="path9-6" />
+    </g>
   </g>
 </svg>

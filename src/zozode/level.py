@@ -101,16 +101,20 @@ class Level:
     ground: tuple[LevelShape, ...]
     enemy_spawns: tuple[LevelShape, ...]
     player_spawns: tuple[LevelShape, ...]
+    obstacles: tuple[LevelShape, ...] = ()
     textures: tuple[LevelShape, ...] = ()
     texture_svg: str | None = None
 
     def contains_ground(self, x: float, y: float) -> bool:
         return any(shape.contains(x, y) for shape in self.ground)
 
+    def contains_obstacle(self, x: float, y: float) -> bool:
+        return any(shape.contains(x, y) for shape in self.obstacles)
+
     def can_walk(self, x: float, y: float, radius: float) -> bool:
         x = clamp(x, radius, self.width - radius)
         y = clamp(y, radius, self.height - radius)
-        return self.contains_ground(x, y)
+        return self.contains_ground(x, y) and not self.contains_obstacle(x, y)
 
     def random_player_spawn(self, radius: float) -> tuple[float, float]:
         return self._random_spawn(self.player_spawns or self.ground, radius)
@@ -125,12 +129,12 @@ class Level:
         if not shapes:
             return self.width / 2, self.height / 2
         for _ in range(100):
-            x, y = random.choice(shapes).random_point()
+            x, y = shapes[random.randrange(len(shapes))].random_point()
             x = clamp(x, radius, self.width - radius)
             y = clamp(y, radius, self.height - radius)
-            if self.contains_ground(x, y) or shapes is self.ground:
+            if self.can_walk(x, y, radius) or shapes is self.ground:
                 return x, y
-        x, y = random.choice(shapes).random_point()
+        x, y = shapes[random.randrange(len(shapes))].random_point()
         return clamp(x, radius, self.width - radius), clamp(y, radius, self.height - radius)
 
 
@@ -144,9 +148,10 @@ def load_level(path: Path) -> Level:
     ground = tuple(_layer_shapes(root, "ground"))
     enemy_spawns = tuple(_layer_shapes(root, "enemySpawn"))
     player_spawns = tuple(_layer_shapes(root, "playerSpawn"))
+    obstacles = tuple(_layer_shapes(root, "obstacle"))
     textures = tuple(_texture_shapes(root))
     texture_svg = _texture_svg(root)
-    return Level(width, height, ground, enemy_spawns, player_spawns, textures, texture_svg)
+    return Level(width, height, ground, enemy_spawns, player_spawns, obstacles, textures, texture_svg)
 
 
 def _svg_size(root: ET.Element) -> tuple[float, float]:
@@ -172,7 +177,7 @@ def _layer_shapes(root: ET.Element, layer_id: str) -> list[LevelShape]:
 
 
 def _texture_shapes(root: ET.Element) -> list[LevelShape]:
-    logic_layer_ids = {"ground", "enemySpawn", "playerSpawn"}
+    logic_layer_ids = {"ground", "enemySpawn", "playerSpawn", "obstacle"}
     shapes: list[LevelShape] = []
     for layer in _svg_layers(root):
         if layer.attrib.get("id") in logic_layer_ids:
@@ -185,7 +190,7 @@ def _texture_shapes(root: ET.Element) -> list[LevelShape]:
 
 
 def _texture_svg(root: ET.Element) -> str | None:
-    logic_layer_ids = {"ground", "enemySpawn", "playerSpawn"}
+    logic_layer_ids = {"ground", "enemySpawn", "playerSpawn", "obstacle"}
     has_texture_layer = any(
         layer.attrib.get("id") not in logic_layer_ids for layer in _svg_layers(root)
     )
