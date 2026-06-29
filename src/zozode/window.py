@@ -14,7 +14,7 @@ from zozode.config import DEFAULT_PORT
 from zozode.constants import CLIENT_HOST, DIFFICULTY_NAMES, FPS, HEIGHT, SERVER_HOST, WIDTH
 from zozode.enemies import handle_enemy_hits, maybe_spawn_enemy, step_enemies
 from zozode.level import DEFAULT_LEVEL
-from zozode.magazine import MagazineState, consume_magazine, refresh_reload, start_reload
+from zozode.magazine import MagazineState, consume_magazine, refresh_reload, reset_magazine, start_reload
 from zozode.movement import lerp_remote_player, update_local_player, update_remote_player
 from zozode.network import make_socket, receive_all, send
 from zozode.player import Enemy, Player
@@ -23,8 +23,10 @@ from zozode.player_state import (
     enemy_from_payload,
     enemy_payload,
     player_from_payload,
+    changed_values,
     player_payload,
     spawn_player,
+    sync_recorded_stats,
 )
 from zozode.render import draw
 
@@ -42,7 +44,8 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     players: dict[str, Player] = {server_id: spawn_player(server_id, level)}
     peers: dict[str, tuple[str, int]] = {}
     next_shot_at: dict[str, float] = {server_id: 0.0}
-    magazine = MagazineState(DEFAULT_WEAPON)
+    magazines: dict[str, MagazineState] = {server_id: MagazineState(DEFAULT_WEAPON)}
+    magazine = magazines[server_id]
     enemies: list[Enemy] = []
     score = 0
     next_enemy_spawn_at = time.monotonic()
@@ -87,12 +90,13 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         for message, address in receive_all(sock):
             kind = message.get("type")
             if kind == "join":
-                accept_player(sock, address, message, players, peers, level)
-                next_shot_at[str(message.get("id") or "")] = 0.0
+                player_id = accept_player(sock, address, message, players, peers, level)
+                next_shot_at[player_id] = 0.0
+                magazines[player_id] = MagazineState(DEFAULT_WEAPON)
             elif kind == "move":
                 update_remote_player(message, players, level)
             elif kind == "shoot":
-                spawn_remote_bullet(message, players, next_shot_at, now)
+                spawn_remote_bullet(message, players, next_shot_at, magazines, now)
 
         step_bullets(players, dt, level)
         handle_hits(players, now, friendly_fire)
@@ -106,6 +110,8 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             level,
         )
         step_enemies(enemies, players, dt, now, difficulty, level)
+        for player_id, player in players.items():
+            sync_recorded_stats(player, magazines[player_id])
         state = {
             "type": "state",
             "players": [player_payload(player) for player in players.values()],
@@ -121,6 +127,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             peers.pop(player_id, None)
             players.pop(player_id, None)
             next_shot_at.pop(player_id, None)
+            magazines.pop(player_id, None)
 
         difficulty_name = DIFFICULTY_NAMES.get(difficulty, str(difficulty))
         ff = "on" if friendly_fire else "off"
@@ -132,7 +139,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             enemies,
             magazine,
             players[server_id],
-            score,
+            players[server_id].statistics.score,
             level,
         )
 
@@ -147,7 +154,7 @@ def accept_player(
     players: dict[str, Player],
     peers: dict[str, tuple[str, int]],
     level=DEFAULT_LEVEL,
-) -> None:
+) -> str:
     player_id = str(message.get("id") or uuid.uuid4().hex)
     peers[player_id] = address
     players[player_id] = spawn_player(player_id, level)
@@ -162,16 +169,18 @@ def accept_player(
     ):
         peers.pop(player_id, None)
         players.pop(player_id, None)
+    return player_id
 
 
 def spawn_remote_bullet(
     message: dict[str, Any],
     players: dict[str, Player],
     next_shot_at: dict[str, float],
+    magazines: dict[str, MagazineState],
     now: float,
 ) -> None:
     player_id = str(message.get("id"))
-    if player_id not in players or not players[player_id].alive:
+    if player_id not in players or player_id not in magazines or not players[player_id].alive:
         return
     mouse_pos = (
         int(message.get("mouse_x", players[player_id].indicator_x)),
@@ -182,6 +191,7 @@ def spawn_remote_bullet(
         mouse_pos,
         now,
         next_shot_at.get(player_id, 0.0),
+        on_success_shoot=lambda now=now: consume_magazine(magazines[player_id], now),
     )
     if bullet is not None:
         players[player_id].bullets.append(bullet)
@@ -204,6 +214,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
     score = 0
+    last_move_payload: dict[str, float] = {}
     send(sock, server, {"type": "join", "id": player_id})
 
     running = True
@@ -248,24 +259,27 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
         keys = pygame.key.get_pressed()
         update_local_player(local_player, keys, mouse_pos, dt, level)
         step_bullets(players, dt, level)
-        send(
-            sock,
-            server,
+        move_payload = changed_values(
             {
-                "type": "move",
-                "id": player_id,
                 "x": local_player.x,
                 "y": local_player.y,
                 "mouse_x": mouse_pos[0],
                 "mouse_y": mouse_pos[1],
             },
+            last_move_payload,
         )
+        if move_payload:
+            send(sock, server, {"type": "move", "id": player_id, **move_payload})
 
         for message, _address in receive_all(sock):
             if message.get("type") in {"welcome", "state"}:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
-                score = int(message.get("score", score))
+                score = local_player.statistics.score
+                if local_player.statistics.magazine == magazine.weapon.magazine:
+                    reset_magazine(magazine)
+                else:
+                    magazine.remaining = local_player.statistics.magazine
 
         draw(
             screen,

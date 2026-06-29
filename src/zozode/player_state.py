@@ -12,7 +12,8 @@ from zozode.colors import random_color
 from zozode.constants import DOT_RADIUS, ENEMY_RADIUS, HEALTH
 from zozode.geometry import unit_vector
 from zozode.level import DEFAULT_LEVEL, Level
-from zozode.player import Bullet, Enemy, Player
+from zozode.magazine import MagazineState, reset_magazine
+from zozode.player import Bullet, Enemy, Player, PlayerStatistics
 
 ENEMY_CONFIG = load_basic_enemy()
 
@@ -28,6 +29,7 @@ def spawn_player(name: str, level: Level = DEFAULT_LEVEL) -> Player:
         indicator_x=x,
         indicator_y=y,
         health=HEALTH,
+        statistics=PlayerStatistics(health=HEALTH),
     )
 
 
@@ -114,6 +116,37 @@ def player_payload(player: Player) -> dict[str, Any]:
     return payload
 
 
+def sync_recorded_stats(player: Player, magazine: MagazineState, score: int | None = None) -> None:
+    if not player.alive:
+        reset_magazine(magazine)
+        player.statistics.magazine = magazine.weapon.magazine
+        player.statistics.health = HEALTH
+        player.statistics.score = 0
+        return
+    player.statistics.magazine = max(0, magazine.remaining or 0)
+    player.statistics.health = player.health
+    if score is not None:
+        player.statistics.score = score
+
+
+def recorded_stats(player: Player, magazine: MagazineState, score: int) -> dict[str, int]:
+    sync_recorded_stats(player, magazine, score)
+    return {
+        "magazine": player.statistics.magazine,
+        "health": player.statistics.health,
+        "score": player.statistics.score,
+    }
+
+
+def changed_values(payload: dict[str, float], previous: dict[str, float]) -> dict[str, float]:
+    changed = {}
+    for key, value in payload.items():
+        if previous.get(key) != value:
+            changed[key] = value
+            previous[key] = value
+    return changed
+
+
 def player_from_payload(payload: dict[str, Any]) -> Player:
     color = payload.get("color", [255, 255, 255])
     indicator_color = payload.get("indicator_color", color)
@@ -134,6 +167,15 @@ def player_from_payload(payload: dict[str, Any]) -> Player:
         respawn_at=float(payload.get("respawn_at", 0)),
         alive=bool(payload.get("alive", True)),
         bullets=[bullet_from_payload(item) for item in payload.get("bullets", [])],
+        statistics=statistics_from_payload(payload.get("statistics", {})),
+    )
+
+
+def statistics_from_payload(payload: dict[str, Any]) -> PlayerStatistics:
+    return PlayerStatistics(
+        magazine=int(payload.get("magazine", 0)),
+        health=int(payload.get("health", HEALTH)),
+        score=int(payload.get("score", 0)),
     )
 
 
@@ -149,3 +191,4 @@ def copy_player_state(target: Player, source: Player) -> None:
     target.respawn_at = source.respawn_at
     target.alive = source.alive
     target.bullets = source.bullets
+    target.statistics = source.statistics

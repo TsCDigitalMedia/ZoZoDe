@@ -17,6 +17,12 @@ class MagazineState:
             self.remaining = self.weapon.magazine
 
 
+def reset_magazine(magazine: MagazineState) -> None:
+    magazine.remaining = magazine.weapon.magazine
+    magazine.reload_started_at = 0.0
+    magazine.reload_duration = None
+
+
 def current_reload_duration(magazine: MagazineState) -> float:
     if magazine.reload_duration is not None:
         return magazine.reload_duration

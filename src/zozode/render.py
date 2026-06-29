@@ -73,7 +73,7 @@ def draw(
             3,
         )
         pygame.draw.circle(screen, player.color, player_pos, DOT_RADIUS)
-        health = font.render(str(player.health), True, (240, 240, 240))
+        health = font.render(str(player.statistics.health or player.health), True, (240, 240, 240))
         screen.blit(health, (player_pos[0] - 5, player_pos[1] - 30))
     if magazine is not None:
         draw_magazine(screen, magazine, now)

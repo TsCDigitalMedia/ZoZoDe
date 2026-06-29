@@ -122,6 +122,20 @@ def test_weapon_damage_reduces_enemy_health():
     assert player.bullets == []
 
 
+def test_killing_enemy_adds_score_to_bullet_owner_statistics():
+    from zozode.enemies import handle_enemy_hits
+    from zozode.player import Bullet
+
+    player = make_player("player", 100, 100)
+    enemy = Enemy(id="enemy", x=100, y=100, vx=0, vy=0, target="player", gain=5)
+    player.bullets.append(Bullet(id="bullet", owner="player", x=100, y=100, vx=0, vy=0))
+
+    score_gain = handle_enemy_hits([enemy], {player.name: player})
+
+    assert score_gain == 5
+    assert player.statistics.score == 5
+
+
 def test_enemy_path_waypoint_goes_direct_when_target_is_visible():
     level = Level(
         width=140,

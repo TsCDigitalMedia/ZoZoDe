@@ -43,9 +43,15 @@ def damage_player(player: Player, now: float, amount: int = 1) -> None:
     if player.health == 0:
         player.alive = False
         player.respawn_at = now + RESPAWN_SECONDS
-        player.invulnerable_until = 0
+        reset_stats(player)
     else:
         player.invulnerable_until = now + BLINK_SECONDS
+
+
+def reset_stats(player: Player) -> None:
+    player.health = HEALTH
+    player.invulnerable_until = 0
+    player.bullets = []
 
 
 def reset_finished_blinks(players: dict[str, Player], now: float) -> None:
@@ -67,8 +73,6 @@ def respawn_dead_players(
         player.y = fresh.y
         player.indicator_x = fresh.indicator_x
         player.indicator_y = fresh.indicator_y
-        player.health = HEALTH
-        player.invulnerable_until = 0
+        reset_stats(player)
         player.respawn_at = 0
         player.alive = True
-        player.bullets = []

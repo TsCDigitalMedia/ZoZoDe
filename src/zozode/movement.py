@@ -81,3 +81,4 @@ def lerp_remote_player(target: Player, source: Player, amount: float = 0.35) -> 
     target.respawn_at = source.respawn_at
     target.alive = source.alive
     target.bullets = source.bullets
+    target.statistics = source.statistics

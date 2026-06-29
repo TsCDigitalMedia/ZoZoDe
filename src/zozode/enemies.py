@@ -65,35 +65,39 @@ def handle_enemy_hits(enemies: list[Enemy], players: dict[str, Player]) -> int:
     score_gain = 0
     active_enemies = []
     for enemy in enemies:
-        damage = bullet_damage_enemy(enemy, players)
+        damage, owner = bullet_damage_enemy(enemy, players)
         if damage:
             enemy.health = max(0, enemy.health - damage)
         if enemy.health > 0:
             active_enemies.append(enemy)
         else:
             score_gain += enemy.gain
+            if owner is not None and owner in players:
+                players[owner].statistics.score += enemy.gain
     enemies[:] = active_enemies
     return score_gain
 
 
 def bullet_hits_enemy(enemy: Enemy, players: dict[str, Player]) -> bool:
-    return bullet_damage_enemy(enemy, players) > 0
+    return bullet_damage_enemy(enemy, players)[0] > 0
 
 
-def bullet_damage_enemy(enemy: Enemy, players: dict[str, Player]) -> int:
+def bullet_damage_enemy(enemy: Enemy, players: dict[str, Player]) -> tuple[int, str | None]:
     for player in players.values():
         active_bullets = []
         damage = 0
+        owner = None
         for bullet in player.bullets:
             distance = math.hypot(enemy.x - bullet.x, enemy.y - bullet.y)
             if damage == 0 and distance <= ENEMY_RADIUS + BULLET_RADIUS:
                 damage = bullet.damage
+                owner = bullet.owner
                 continue
             active_bullets.append(bullet)
         player.bullets = active_bullets
         if damage:
-            return damage
-    return 0
+            return damage, owner
+    return 0, None
 
 
 def step_enemies(

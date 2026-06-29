@@ -4,6 +4,13 @@ from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
+class PlayerStatistics:
+    magazine: int = 0
+    health: int = 0
+    score: int = 0
+
+
+@dataclass(slots=True)
 class Bullet:
     id: str
     owner: str
@@ -48,3 +55,4 @@ class Player:
     respawn_at: float = 0.0
     alive: bool = True
     bullets: list[Bullet] = field(default_factory=list)
+    statistics: PlayerStatistics = field(default_factory=PlayerStatistics)
