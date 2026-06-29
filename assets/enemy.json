@@ -3,6 +3,14 @@
         "health": 1,
         "speed": 200,
         "size": 20,
-        "gain": 1
+        "gain": 1,
+        "chance": 1.0
+    },
+    "buffed": {
+        "health": 5,
+        "speed": 150,
+        "size": 30,
+        "gain": 2,
+        "chance": 0.5
     }
 }

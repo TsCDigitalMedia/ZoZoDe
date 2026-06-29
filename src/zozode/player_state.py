@@ -7,7 +7,7 @@ import uuid
 from dataclasses import asdict
 from typing import Any
 
-from zozode.assets import load_basic_enemy
+from zozode.assets import EnemyConfig, load_basic_enemy
 from zozode.colors import random_color
 from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, DOT_RADIUS, ENEMY_RADIUS, HEALTH
 from zozode.geometry import unit_vector
@@ -31,7 +31,11 @@ def spawn_player(name: str) -> Player:
     )
 
 
-def spawn_enemy(players: dict[str, Player]) -> Enemy | None:
+def spawn_enemy(
+    players: dict[str, Player],
+    config: EnemyConfig = ENEMY_CONFIG,
+    kind: str = "basic",
+) -> Enemy | None:
     targets = [player for player in players.values() if player.alive]
     if not targets:
         return None
@@ -61,7 +65,10 @@ def spawn_enemy(players: dict[str, Player]) -> Enemy | None:
         vx=vx,
         vy=vy,
         target=target.name,
-        health=ENEMY_CONFIG.health,
+        kind=kind,
+        health=config.health,
+        speed=config.speed,
+        gain=config.gain,
     )
 
 
@@ -93,7 +100,10 @@ def enemy_from_payload(payload: dict[str, Any]) -> Enemy:
         vx=float(payload.get("vx", 0)),
         vy=float(payload.get("vy", 0)),
         target=str(payload.get("target", "")),
+        kind=str(payload.get("kind", "basic")),
         health=int(payload.get("health", 1)),
+        speed=float(payload.get("speed", ENEMY_CONFIG.speed)),
+        gain=int(payload.get("gain", ENEMY_CONFIG.gain)),
         target_age=float(payload.get("target_age", 0)),
     )
 

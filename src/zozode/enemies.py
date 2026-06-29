@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 
-from zozode.assets import load_basic_enemy
+from zozode.assets import load_enemy_configs
 from zozode.combat import damage_player
 from zozode.constants import (
     ARENA_HEIGHT,
@@ -20,11 +20,19 @@ from zozode.geometry import unit_vector
 from zozode.player import Enemy, Player
 from zozode.player_state import spawn_enemy
 
-ENEMY_CONFIG = load_basic_enemy()
+ENEMY_CONFIGS = load_enemy_configs()
 
 
-def enemy_speed(difficulty: int) -> float:
-    return ENEMY_CONFIG.speed * (1 + max(DIFFICULTY_EASY, difficulty) * ENEMY_SPEED_STEP)
+def enemy_speed(enemy: Enemy, difficulty: int) -> float:
+    return enemy.speed * (1 + max(DIFFICULTY_EASY, difficulty) * ENEMY_SPEED_STEP)
+
+
+def enemy_spawn_count(chance: float) -> int:
+    guaranteed = max(0, int(chance))
+    remainder = max(0.0, chance - guaranteed)
+    if random.random() < remainder:
+        return guaranteed + 1
+    return guaranteed
 
 
 def enemy_spawn_seconds(difficulty: int) -> float:
@@ -41,9 +49,11 @@ def maybe_spawn_enemy(
 ) -> float:
     if now < next_spawn_at:
         return next_spawn_at
-    enemy = spawn_enemy(players)
-    if enemy is not None:
-        enemies.append(enemy)
+    for kind, config in ENEMY_CONFIGS.items():
+        for _ in range(enemy_spawn_count(config.chance)):
+            enemy = spawn_enemy(players, config, kind)
+            if enemy is not None:
+                enemies.append(enemy)
     return now + enemy_spawn_seconds(difficulty)
 
 
@@ -56,7 +66,7 @@ def handle_enemy_hits(enemies: list[Enemy], players: dict[str, Player]) -> int:
         if enemy.health > 0:
             active_enemies.append(enemy)
         else:
-            score_gain += ENEMY_CONFIG.gain
+            score_gain += enemy.gain
     enemies[:] = active_enemies
     return score_gain
 
@@ -84,9 +94,9 @@ def step_enemies(
     now: float,
     difficulty: int,
 ) -> None:
-    speed = enemy_speed(difficulty)
     active = []
     for enemy in enemies:
+        speed = enemy_speed(enemy, difficulty)
         enemy.target_age += dt
         target = players.get(enemy.target)
         if target is None or not target.alive or enemy.target_age >= ENEMY_TARGET_SECONDS:

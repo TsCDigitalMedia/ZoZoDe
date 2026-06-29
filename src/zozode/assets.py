@@ -36,6 +36,7 @@ class EnemyConfig:
     speed: float
     size: int
     gain: int
+    chance: float
 
 
 def load_json_asset(filename: str) -> dict[str, Any]:
@@ -57,11 +58,20 @@ def load_default_weapon() -> WeaponConfig:
     )
 
 
-def load_basic_enemy() -> EnemyConfig:
-    payload = load_json_asset("enemy.json")["basic"]
+def enemy_config_from_payload(payload: dict[str, Any]) -> EnemyConfig:
     return EnemyConfig(
         health=int(payload.get("health", 1)),
         speed=float(payload.get("speed", 200)),
         size=int(payload.get("size", 20)),
         gain=int(payload.get("gain", 1)),
+        chance=float(payload.get("chance", 1.0)),
     )
+
+
+def load_enemy_configs() -> dict[str, EnemyConfig]:
+    payload = load_json_asset("enemy.json")
+    return {name: enemy_config_from_payload(item) for name, item in payload.items()}
+
+
+def load_basic_enemy() -> EnemyConfig:
+    return load_enemy_configs()["basic"]
