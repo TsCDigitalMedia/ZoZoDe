@@ -6,6 +6,8 @@ import random
 from zozode.assets import load_basic_enemy
 from zozode.combat import damage_player
 from zozode.constants import (
+    ARENA_HEIGHT,
+    ARENA_WIDTH,
     BULLET_RADIUS,
     DIFFICULTY_EASY,
     ENEMY_BASE_SPAWN_SECONDS,
@@ -13,8 +15,6 @@ from zozode.constants import (
     ENEMY_SPAWN_SPEED_STEP,
     ENEMY_SPEED_STEP,
     ENEMY_TARGET_SECONDS,
-    HEIGHT,
-    WIDTH,
 )
 from zozode.geometry import unit_vector
 from zozode.player import Enemy, Player
@@ -96,8 +96,8 @@ def step_enemies(
         enemy.y += enemy.vy * speed * dt
         if hit_player(enemy, players, now):
             continue
-        in_horizontal_bounds = -ENEMY_RADIUS * 2 <= enemy.x <= WIDTH + ENEMY_RADIUS * 2
-        in_vertical_bounds = -ENEMY_RADIUS * 2 <= enemy.y <= HEIGHT + ENEMY_RADIUS * 2
+        in_horizontal_bounds = -ENEMY_RADIUS * 2 <= enemy.x <= ARENA_WIDTH + ENEMY_RADIUS * 2
+        in_vertical_bounds = -ENEMY_RADIUS * 2 <= enemy.y <= ARENA_HEIGHT + ENEMY_RADIUS * 2
         if in_horizontal_bounds and in_vertical_bounds:
             active.append(enemy)
     enemies[:] = active

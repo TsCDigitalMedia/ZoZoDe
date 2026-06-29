@@ -4,7 +4,7 @@ from typing import Any
 
 import pygame
 
-from zozode.constants import DOT_RADIUS, HEIGHT, INDICATOR_LENGTH, SPEED, WIDTH
+from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, DOT_RADIUS, INDICATOR_LENGTH, SPEED
 from zozode.geometry import clamp, indicator_endpoint
 from zozode.player import Player
 
@@ -19,8 +19,8 @@ def update_remote_player(
     player = players[player_id]
     if not player.alive:
         return
-    player.x = clamp(float(message.get("x", player.x)), DOT_RADIUS, WIDTH - DOT_RADIUS)
-    player.y = clamp(float(message.get("y", player.y)), DOT_RADIUS, HEIGHT - DOT_RADIUS)
+    player.x = clamp(float(message.get("x", player.x)), DOT_RADIUS, ARENA_WIDTH - DOT_RADIUS)
+    player.y = clamp(float(message.get("y", player.y)), DOT_RADIUS, ARENA_HEIGHT - DOT_RADIUS)
     mouse_x = float(message.get("mouse_x", player.indicator_x))
     mouse_y = float(message.get("mouse_y", player.indicator_y))
     player.indicator_x, player.indicator_y = indicator_endpoint(
@@ -41,8 +41,8 @@ def update_local_player(
         return
     dx = float(keys[pygame.K_d]) - float(keys[pygame.K_a])
     dy = float(keys[pygame.K_s]) - float(keys[pygame.K_w])
-    player.x = clamp(player.x + dx * SPEED * dt, DOT_RADIUS, WIDTH - DOT_RADIUS)
-    player.y = clamp(player.y + dy * SPEED * dt, DOT_RADIUS, HEIGHT - DOT_RADIUS)
+    player.x = clamp(player.x + dx * SPEED * dt, DOT_RADIUS, ARENA_WIDTH - DOT_RADIUS)
+    player.y = clamp(player.y + dy * SPEED * dt, DOT_RADIUS, ARENA_HEIGHT - DOT_RADIUS)
     player.indicator_x, player.indicator_y = indicator_endpoint(
         player,
         mouse_pos[0],

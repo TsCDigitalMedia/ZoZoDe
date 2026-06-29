@@ -5,7 +5,7 @@ import random
 import uuid
 
 from zozode.assets import WeaponConfig, load_default_weapon
-from zozode.constants import BULLET_LIFETIME, BULLET_SPEED, HEIGHT, WIDTH
+from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, BULLET_LIFETIME, BULLET_SPEED
 from zozode.geometry import unit_vector
 from zozode.player import Bullet, Player
 
@@ -58,6 +58,10 @@ def step_bullets(players: dict[str, Player], dt: float) -> None:
             bullet.x += bullet.vx * dt
             bullet.y += bullet.vy * dt
             bullet.age += dt
-            if 0 <= bullet.x <= WIDTH and 0 <= bullet.y <= HEIGHT and bullet.age <= BULLET_LIFETIME:
+            if (
+                0 <= bullet.x <= ARENA_WIDTH
+                and 0 <= bullet.y <= ARENA_HEIGHT
+                and bullet.age <= BULLET_LIFETIME
+            ):
                 active.append(bullet)
         player.bullets = active

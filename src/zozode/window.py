@@ -7,12 +7,13 @@ from typing import Any
 
 import pygame
 
-from zozode.magazine import MagazineState, consume_magazine, refresh_reload, start_reload
 from zozode.bullets import DEFAULT_WEAPON, maybe_spawn_bullet, step_bullets
+from zozode.camera import camera_offset, screen_to_world
 from zozode.combat import handle_hits, reset_finished_blinks, respawn_dead_players
 from zozode.config import DEFAULT_PORT
 from zozode.constants import CLIENT_HOST, DIFFICULTY_NAMES, FPS, HEIGHT, SERVER_HOST, WIDTH
 from zozode.enemies import handle_enemy_hits, maybe_spawn_enemy, step_enemies
+from zozode.magazine import MagazineState, consume_magazine, refresh_reload, start_reload
 from zozode.movement import lerp_remote_player, update_local_player, update_remote_player
 from zozode.network import make_socket, receive_all, send
 from zozode.player import Enemy, Player
@@ -55,6 +56,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         refresh_reload(magazine, now)
         if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
             start_reload(magazine, now, DEFAULT_WEAPON.reload_time / 2)
+        mouse_pos = screen_to_world(pygame.mouse.get_pos(), camera_offset(players[server_id]))
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
@@ -63,7 +65,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         if wants_shot:
             bullet, next_shot_at[server_id] = maybe_spawn_bullet(
                 players[server_id],
-                pygame.mouse.get_pos(),
+                mouse_pos,
                 now,
                 next_shot_at[server_id],
                 on_success_shoot=lambda now=now: consume_magazine(magazine, now),
@@ -74,7 +76,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         reset_finished_blinks(players, now)
         respawn_dead_players(players, now)
         keys = pygame.key.get_pressed()
-        update_local_player(players[server_id], keys, pygame.mouse.get_pos(), dt)
+        update_local_player(players[server_id], keys, mouse_pos, dt)
 
         for message, address in receive_all(sock):
             kind = message.get("type")
@@ -121,6 +123,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             f"Server UDP :{port}  {difficulty_name}  FF {ff}  click shoots",
             enemies,
             magazine,
+            players[server_id],
         )
 
     sock.close()
@@ -196,7 +199,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     while running:
         dt = clock.tick(FPS) / 1000
         now = time.monotonic()
-        mouse_pos = pygame.mouse.get_pos()
+        mouse_pos = screen_to_world(pygame.mouse.get_pos(), camera_offset(local_player))
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
@@ -252,7 +255,15 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
 
-        draw(screen, font, players.values(), f"Client {host}:{port}  click shoots", enemies, magazine)
+        draw(
+            screen,
+            font,
+            players.values(),
+            f"Client {host}:{port}  click shoots",
+            enemies,
+            magazine,
+            local_player,
+        )
 
     sock.close()
     pygame.quit()

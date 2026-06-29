@@ -9,7 +9,7 @@ from typing import Any
 
 from zozode.assets import load_basic_enemy
 from zozode.colors import random_color
-from zozode.constants import DOT_RADIUS, ENEMY_RADIUS, HEALTH, HEIGHT, WIDTH
+from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, DOT_RADIUS, ENEMY_RADIUS, HEALTH
 from zozode.geometry import unit_vector
 from zozode.player import Bullet, Enemy, Player
 
@@ -17,8 +17,8 @@ ENEMY_CONFIG = load_basic_enemy()
 
 
 def spawn_player(name: str) -> Player:
-    x = random.randint(DOT_RADIUS, WIDTH - DOT_RADIUS)
-    y = random.randint(DOT_RADIUS, HEIGHT - DOT_RADIUS)
+    x = random.randint(DOT_RADIUS, ARENA_WIDTH - DOT_RADIUS)
+    y = random.randint(DOT_RADIUS, ARENA_HEIGHT - DOT_RADIUS)
     return Player(
         name=name,
         x=x,
@@ -37,17 +37,17 @@ def spawn_enemy(players: dict[str, Player]) -> Enemy | None:
         return None
     edge = random.randrange(4)
     if edge == 0:
-        x = random.uniform(0, WIDTH)
+        x = random.uniform(0, ARENA_WIDTH)
         y = -ENEMY_RADIUS
     elif edge == 1:
-        x = WIDTH + ENEMY_RADIUS
-        y = random.uniform(0, HEIGHT)
+        x = ARENA_WIDTH + ENEMY_RADIUS
+        y = random.uniform(0, ARENA_HEIGHT)
     elif edge == 2:
-        x = random.uniform(0, WIDTH)
-        y = HEIGHT + ENEMY_RADIUS
+        x = random.uniform(0, ARENA_WIDTH)
+        y = ARENA_HEIGHT + ENEMY_RADIUS
     else:
         x = -ENEMY_RADIUS
-        y = random.uniform(0, HEIGHT)
+        y = random.uniform(0, ARENA_HEIGHT)
     nearest_distance = min(math.hypot(player.x - x, player.y - y) for player in targets)
     nearest_targets = [
         player for player in targets if math.hypot(player.x - x, player.y - y) == nearest_distance

@@ -1,5 +1,11 @@
-from zozode.magazine import MagazineState, consume_magazine, refresh_reload, reload_progress, start_reload
 from zozode.assets import WeaponConfig
+from zozode.magazine import (
+    MagazineState,
+    consume_magazine,
+    refresh_reload,
+    reload_progress,
+    start_reload,
+)
 
 TEST_WEAPON = WeaponConfig(
     name="Test",
