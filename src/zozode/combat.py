@@ -4,7 +4,7 @@ import math
 
 from zozode.constants import BLINK_SECONDS, BULLET_RADIUS, DOT_RADIUS, HEALTH, RESPAWN_SECONDS
 from zozode.level import DEFAULT_LEVEL, Level
-from zozode.player import Bullet, Player
+from zozode.player import Bullet, Player, PlayerStatistics
 from zozode.player_state import spawn_player
 
 
@@ -52,6 +52,7 @@ def reset_stats(player: Player) -> None:
     player.health = HEALTH
     player.invulnerable_until = 0
     player.bullets = []
+    player.statistics = PlayerStatistics(health=HEALTH)
 
 
 def reset_finished_blinks(players: dict[str, Player], now: float) -> None:

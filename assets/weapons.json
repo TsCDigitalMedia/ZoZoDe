@@ -6,7 +6,7 @@
         "magazine": 10,
         "reloadTime": 1.2,
         "spread": 0.1,
-        "damage": 2,
+        "damage": 3,
         "isHoldable": false
     },
     "rifle": {

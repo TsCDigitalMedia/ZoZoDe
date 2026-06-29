@@ -8,6 +8,8 @@ class PlayerStatistics:
     magazine: int = 0
     health: int = 0
     score: int = 0
+    rps_multiplier: float = 1.0
+    damage_multiplier: float = 1.0
 
 
 @dataclass(slots=True)

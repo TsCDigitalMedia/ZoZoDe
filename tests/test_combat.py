@@ -21,6 +21,9 @@ def test_damage_player_resets_stats_on_death():
     player = make_player()
     player.health = 1
     player.invulnerable_until = 99.0
+    player.statistics.score = 90
+    player.statistics.rps_multiplier = 2.0
+    player.statistics.damage_multiplier = 2.0
     player.bullets.append(Bullet(id="bullet", owner="player", x=20, y=20, vx=1, vy=0))
 
     damage_player(player, 10.0)
@@ -30,6 +33,10 @@ def test_damage_player_resets_stats_on_death():
     assert player.respawn_at == 10.0 + RESPAWN_SECONDS
     assert player.invulnerable_until == 0
     assert player.bullets == []
+    assert player.statistics.health == HEALTH
+    assert player.statistics.score == 0
+    assert player.statistics.rps_multiplier == 1.0
+    assert player.statistics.damage_multiplier == 1.0
 
 
 def test_damage_player_keeps_damaged_stats_when_player_survives():
@@ -56,6 +63,9 @@ def test_respawn_dead_players_keeps_default_stats_after_respawn():
     player.health = 1
     player.respawn_at = 10.0
     player.invulnerable_until = 99.0
+    player.statistics.score = 90
+    player.statistics.rps_multiplier = 2.0
+    player.statistics.damage_multiplier = 2.0
     player.bullets.append(Bullet(id="bullet", owner="player", x=20, y=20, vx=1, vy=0))
 
     respawn_dead_players({player.name: player}, 10.0, level)
@@ -65,4 +75,8 @@ def test_respawn_dead_players_keeps_default_stats_after_respawn():
     assert player.respawn_at == 0
     assert player.invulnerable_until == 0
     assert player.bullets == []
+    assert player.statistics.health == HEALTH
+    assert player.statistics.score == 0
+    assert player.statistics.rps_multiplier == 1.0
+    assert player.statistics.damage_multiplier == 1.0
     assert (player.x, player.y) == (30, 40)

@@ -21,6 +21,7 @@ from zozode.constants import (
 from zozode.level import DEFAULT_LEVEL, Level, LevelShape
 from zozode.magazine import MagazineState, reload_progress
 from zozode.player import Enemy, Player
+from zozode.powerups import POWERUP_OPTIONS, powerup_button_rects, should_show_powerups
 
 _TEXTURE_CACHE: dict[int, pygame.Surface | None] = {}
 
@@ -81,6 +82,8 @@ def draw(
     screen.blit(text, (12, 12))
     score_text = font.render(f"Score {score}", True, (230, 230, 230))
     screen.blit(score_text, (WIDTH - score_text.get_width() - 12, 12))
+    if should_show_powerups(score):
+        draw_powerups(screen, font, score)
     pygame.display.flip()
 
 
@@ -187,6 +190,28 @@ def draw_level_shape(
             world_to_screen(shape.points[1][0], shape.points[1][1], offset),
             3,
         )
+
+
+def draw_powerups(screen: pygame.Surface, font: pygame.font.Font, score: int) -> None:
+    rects = powerup_button_rects()
+    panel = pygame.Rect(WIDTH // 2 - 250, HEIGHT // 2 - 128, 500, 236)
+    pygame.draw.rect(screen, (28, 28, 34), panel)
+    pygame.draw.rect(screen, (220, 220, 230), panel, 2)
+
+    title = font.render("Power Ups", True, (240, 240, 240))
+    screen.blit(title, (panel.centerx - title.get_width() // 2, panel.top + 12))
+
+    for option in POWERUP_OPTIONS:
+        rect = rects[option.id]
+        affordable = score >= option.cost
+        fill = (78, 78, 96) if affordable else (48, 48, 56)
+        border = (240, 240, 240) if affordable else (120, 120, 128)
+        pygame.draw.rect(screen, fill, rect)
+        pygame.draw.rect(screen, border, rect, 2)
+        label = font.render(option.label, True, border)
+        cost = font.render(f"{option.cost} score", True, border)
+        screen.blit(label, (rect.centerx - label.get_width() // 2, rect.centery - 14))
+        screen.blit(cost, (rect.centerx - cost.get_width() // 2, rect.centery + 10))
 
 
 def draw_magazine(screen: pygame.Surface, magazine: MagazineState, now: float) -> None:

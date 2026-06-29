@@ -28,6 +28,7 @@ from zozode.player_state import (
     spawn_player,
     sync_recorded_stats,
 )
+from zozode.powerups import apply_powerup, powerup_at, should_show_powerups
 from zozode.render import draw
 
 
@@ -47,7 +48,6 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
     magazines: dict[str, MagazineState] = {server_id: MagazineState(DEFAULT_WEAPON)}
     magazine = magazines[server_id]
     enemies: list[Enemy] = []
-    score = 0
     next_enemy_spawn_at = time.monotonic()
 
     running = True
@@ -55,9 +55,19 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         dt = clock.tick(FPS) / 1000
         now = time.monotonic()
         events = pygame.event.get()
+        powerup_clicked = False
         for event in events:
             if event.type == pygame.QUIT:
                 running = False
+            elif (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+                and should_show_powerups(players[server_id].statistics.score)
+            ):
+                powerup_id = powerup_at(event.pos)
+                if powerup_id is not None:
+                    apply_powerup(players[server_id], magazine, powerup_id)
+                    powerup_clicked = True
 
         refresh_reload(magazine, now)
         if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
@@ -69,7 +79,7 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
-        )
+        ) and not powerup_clicked
         wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
         if wants_shot:
             bullet, next_shot_at[server_id] = maybe_spawn_bullet(
@@ -97,10 +107,12 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
                 update_remote_player(message, players, level)
             elif kind == "shoot":
                 spawn_remote_bullet(message, players, next_shot_at, magazines, now)
+            elif kind == "powerup":
+                handle_powerup_purchase(message, players, magazines)
 
         step_bullets(players, dt, level)
         handle_hits(players, now, friendly_fire)
-        score += handle_enemy_hits(enemies, players)
+        handle_enemy_hits(enemies, players)
         next_enemy_spawn_at = maybe_spawn_enemy(
             enemies,
             players,
@@ -117,7 +129,6 @@ def run_server(port: int = DEFAULT_PORT, difficulty: int = 1, friendly_fire: boo
             "players": [player_payload(player) for player in players.values()],
             "enemies": [enemy_payload(enemy) for enemy in enemies],
             "difficulty": difficulty,
-            "score": score,
         }
         disconnected = []
         for player_id, address in peers.items():
@@ -172,6 +183,18 @@ def accept_player(
     return player_id
 
 
+def handle_powerup_purchase(
+    message: dict[str, Any],
+    players: dict[str, Player],
+    magazines: dict[str, MagazineState],
+) -> None:
+    player_id = str(message.get("id"))
+    powerup_id = str(message.get("powerup"))
+    if player_id not in players or player_id not in magazines or not players[player_id].alive:
+        return
+    apply_powerup(players[player_id], magazines[player_id], powerup_id)
+
+
 def spawn_remote_bullet(
     message: dict[str, Any],
     players: dict[str, Player],
@@ -213,7 +236,6 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
     next_shot_at = 0.0
     magazine = MagazineState(DEFAULT_WEAPON)
     enemies: list[Enemy] = []
-    score = 0
     last_move_payload: dict[str, float] = {}
     send(sock, server, {"type": "join", "id": player_id})
 
@@ -223,9 +245,19 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
         now = time.monotonic()
         mouse_pos = screen_to_world(pygame.mouse.get_pos(), camera_offset(local_player, level))
         events = pygame.event.get()
+        powerup_clicked = False
         for event in events:
             if event.type == pygame.QUIT:
                 running = False
+            elif (
+                event.type == pygame.MOUSEBUTTONDOWN
+                and event.button == 1
+                and should_show_powerups(local_player.statistics.score)
+            ):
+                powerup_id = powerup_at(event.pos)
+                if powerup_id is not None:
+                    send(sock, server, {"type": "powerup", "id": player_id, "powerup": powerup_id})
+                    powerup_clicked = True
 
         refresh_reload(magazine, now)
         if any(event.type == pygame.KEYDOWN and event.key == pygame.K_r for event in events):
@@ -233,7 +265,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
         mouse_pressed = pygame.mouse.get_pressed()[0]
         mouse_clicked = any(
             event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 for event in events
-        )
+        ) and not powerup_clicked
         wants_shot = mouse_pressed if DEFAULT_WEAPON.is_holdable else mouse_clicked
         if wants_shot:
             bullet, next_shot_at = maybe_spawn_bullet(
@@ -275,7 +307,6 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             if message.get("type") in {"welcome", "state"}:
                 sync_players(message, players, player_id, local_player)
                 sync_enemies(message, enemies)
-                score = local_player.statistics.score
                 if local_player.statistics.magazine == magazine.weapon.magazine:
                     reset_magazine(magazine)
                 else:
@@ -289,7 +320,7 @@ def run_client(host: str, port: int = DEFAULT_PORT) -> None:
             enemies,
             magazine,
             local_player,
-            score,
+            local_player.statistics.score,
             level,
         )
 

@@ -17,6 +17,11 @@ def default_on_success_shoot() -> bool:
     return True
 
 
+def shot_interval_seconds(player: Player, weapon: WeaponConfig = DEFAULT_WEAPON) -> float:
+    rps = max(0.1, weapon.rps * player.statistics.rps_multiplier)
+    return 1 / rps
+
+
 def spawn_bullet(
     player: Player,
     mouse_pos: tuple[int, int],
@@ -34,7 +39,7 @@ def spawn_bullet(
         y=player.y,
         vx=dx * BULLET_SPEED,
         vy=dy * BULLET_SPEED,
-        damage=weapon.damage,
+        damage=max(1, round(weapon.damage * player.statistics.damage_multiplier)),
     )
 
 
@@ -50,7 +55,7 @@ def maybe_spawn_bullet(
         return None, next_shot_at
     if not on_success_shoot():
         return None, next_shot_at
-    return spawn_bullet(player, mouse_pos, weapon), now + weapon.shot_interval_seconds
+    return spawn_bullet(player, mouse_pos, weapon), now + shot_interval_seconds(player, weapon)
 
 
 def step_bullets(players: dict[str, Player], dt: float, level: Level = DEFAULT_LEVEL) -> None:

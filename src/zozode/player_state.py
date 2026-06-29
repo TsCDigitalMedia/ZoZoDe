@@ -78,6 +78,7 @@ def bullet_from_payload(payload: dict[str, Any]) -> Bullet:
         y=float(payload["y"]),
         vx=float(payload["vx"]),
         vy=float(payload["vy"]),
+        damage=int(payload.get("damage", 1)),
         age=float(payload.get("age", 0)),
     )
 
@@ -176,6 +177,8 @@ def statistics_from_payload(payload: dict[str, Any]) -> PlayerStatistics:
         magazine=int(payload.get("magazine", 0)),
         health=int(payload.get("health", HEALTH)),
         score=int(payload.get("score", 0)),
+        rps_multiplier=float(payload.get("rps_multiplier", 1.0)),
+        damage_multiplier=float(payload.get("damage_multiplier", 1.0)),
     )
 
 
