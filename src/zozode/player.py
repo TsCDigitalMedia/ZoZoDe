@@ -28,6 +28,9 @@ class Enemy:
     damage: int = 1
     gain: int = 1
     target_age: float = 0.0
+    path_next_update_at: float = 0.0
+    path_target_x: float = 0.0
+    path_target_y: float = 0.0
 
 
 @dataclass(slots=True)

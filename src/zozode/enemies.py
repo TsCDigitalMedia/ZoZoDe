@@ -21,6 +21,9 @@ from zozode.player import Enemy, Player
 from zozode.player_state import spawn_enemy
 
 ENEMY_CONFIGS = load_enemy_configs()
+PATH_RECOMPUTE_SECONDS = 0.5
+TARGET_PREDICTION_SECONDS = 0.5
+_PLAYER_TRACKS: dict[str, tuple[float, float, float, float, float]] = {}
 
 
 def enemy_speed(enemy: Enemy, difficulty: int) -> float:
@@ -97,6 +100,8 @@ def step_enemies(
     level: Level = DEFAULT_LEVEL,
 ) -> None:
     active = []
+    predictions = player_predictions(players, now, level)
+    path_maps: dict[tuple[int, int], dict[tuple[int, int], float]] = {}
     for enemy in enemies:
         speed = enemy_speed(enemy, difficulty)
         enemy.target_age += dt
@@ -106,8 +111,13 @@ def step_enemies(
             if target is not None:
                 enemy.target = target.name
                 enemy.target_age = 0
-        if target is not None:
-            enemy.vx, enemy.vy = enemy_path_direction(enemy, target, level)
+                enemy.path_next_update_at = 0
+        if target is not None and now >= enemy.path_next_update_at:
+            target_x, target_y = predictions[target.name]
+            enemy.vx, enemy.vy = enemy_path_direction_to(enemy, target_x, target_y, level, path_maps)
+            enemy.path_target_x = target_x
+            enemy.path_target_y = target_y
+            enemy.path_next_update_at = now + PATH_RECOMPUTE_SECONDS
         move_enemy_on_ground(enemy, speed * dt, level)
         if hit_player(enemy, players, now):
             continue
@@ -137,8 +147,59 @@ def move_enemy_on_ground(enemy: Enemy, distance: float, level: Level = DEFAULT_L
         enemy.vy = 0
 
 
-def enemy_path_direction(enemy: Enemy, target: Player, level: Level = DEFAULT_LEVEL) -> tuple[float, float]:
-    waypoint = enemy_path_waypoint(enemy, target, level)
+def player_predictions(
+    players: dict[str, Player],
+    now: float,
+    level: Level = DEFAULT_LEVEL,
+) -> dict[str, tuple[float, float]]:
+    predictions: dict[str, tuple[float, float]] = {}
+    live_names = set(players)
+    for stale_name in list(_PLAYER_TRACKS):
+        if stale_name not in live_names:
+            _PLAYER_TRACKS.pop(stale_name, None)
+
+    for name, player in players.items():
+        previous = _PLAYER_TRACKS.get(name)
+        if previous is None:
+            vx = 0.0
+            vy = 0.0
+        else:
+            previous_x, previous_y, previous_time, previous_vx, previous_vy = previous
+            elapsed = max(0.0, now - previous_time)
+            if elapsed > 0:
+                vx = (player.x - previous_x) / elapsed
+                vy = (player.y - previous_y) / elapsed
+            else:
+                vx = previous_vx
+                vy = previous_vy
+
+        predicted_x = min(max(player.x + vx * TARGET_PREDICTION_SECONDS, ENEMY_RADIUS), level.width - ENEMY_RADIUS)
+        predicted_y = min(max(player.y + vy * TARGET_PREDICTION_SECONDS, ENEMY_RADIUS), level.height - ENEMY_RADIUS)
+        if not level.can_walk(predicted_x, predicted_y, ENEMY_RADIUS):
+            predicted_x = player.x
+            predicted_y = player.y
+        predictions[name] = (predicted_x, predicted_y)
+        _PLAYER_TRACKS[name] = (player.x, player.y, now, vx, vy)
+    return predictions
+
+
+def enemy_path_direction(
+    enemy: Enemy,
+    target: Player,
+    level: Level = DEFAULT_LEVEL,
+    path_maps: dict[tuple[int, int], dict[tuple[int, int], float]] | None = None,
+) -> tuple[float, float]:
+    return enemy_path_direction_to(enemy, target.x, target.y, level, path_maps)
+
+
+def enemy_path_direction_to(
+    enemy: Enemy,
+    target_x: float,
+    target_y: float,
+    level: Level = DEFAULT_LEVEL,
+    path_maps: dict[tuple[int, int], dict[tuple[int, int], float]] | None = None,
+) -> tuple[float, float]:
+    waypoint = enemy_path_waypoint_to(enemy, target_x, target_y, level, path_maps=path_maps)
     return unit_vector(enemy.x, enemy.y, waypoint[0], waypoint[1])
 
 
@@ -147,51 +208,108 @@ def enemy_path_waypoint(
     target: Player,
     level: Level = DEFAULT_LEVEL,
     cell_size: float = ENEMY_RADIUS * 2,
+    path_maps: dict[tuple[int, int], dict[tuple[int, int], float]] | None = None,
 ) -> tuple[float, float]:
-    start = _grid_cell(enemy.x, enemy.y, cell_size)
-    goal = _grid_cell(target.x, target.y, cell_size)
-    if start == goal:
-        return target.x, target.y
+    return enemy_path_waypoint_to(enemy, target.x, target.y, level, cell_size, path_maps)
 
-    path = _shortest_walkable_path(start, goal, level, cell_size)
-    if len(path) >= 2:
-        return _cell_center(path[1], cell_size, level)
+
+def enemy_path_waypoint_to(
+    enemy: Enemy,
+    target_x: float,
+    target_y: float,
+    level: Level = DEFAULT_LEVEL,
+    cell_size: float = ENEMY_RADIUS * 2,
+    path_maps: dict[tuple[int, int], dict[tuple[int, int], float]] | None = None,
+) -> tuple[float, float]:
+    if _direct_path_clear(enemy.x, enemy.y, target_x, target_y, level, cell_size):
+        return target_x, target_y
+
+    start = _grid_cell(enemy.x, enemy.y, cell_size)
+    goal = _grid_cell(target_x, target_y, cell_size)
+    if start == goal:
+        return target_x, target_y
+
+    if path_maps is None:
+        path_costs = _walkable_costs_to_goal(goal, level, cell_size)
+    else:
+        path_costs = path_maps.get(goal)
+        if path_costs is None:
+            path_costs = _walkable_costs_to_goal(goal, level, cell_size)
+            path_maps[goal] = path_costs
+
+    path = _greedy_walkable_path(start, goal, path_costs, level, cell_size)
+    for cell in reversed(path[1:]):
+        x, y = _cell_center(cell, cell_size, level)
+        if _direct_path_clear(enemy.x, enemy.y, x, y, level, cell_size):
+            return x, y
     if path:
         return _cell_center(path[0], cell_size, level)
-    return target.x, target.y
+    return target_x, target_y
 
 
-def _shortest_walkable_path(
-    start: tuple[int, int],
+def _direct_path_clear(
+    start_x: float,
+    start_y: float,
+    end_x: float,
+    end_y: float,
+    level: Level,
+    cell_size: float,
+) -> bool:
+    distance = math.hypot(end_x - start_x, end_y - start_y)
+    steps = max(1, int(distance / (cell_size / 2)))
+    for step in range(1, steps + 1):
+        amount = step / steps
+        x = start_x + (end_x - start_x) * amount
+        y = start_y + (end_y - start_y) * amount
+        if not level.can_walk(x, y, ENEMY_RADIUS):
+            return False
+    return True
+
+
+def _walkable_costs_to_goal(
     goal: tuple[int, int],
     level: Level,
     cell_size: float,
-) -> list[tuple[int, int]]:
-    frontier: list[tuple[float, tuple[int, int]]] = [(0.0, start)]
-    came_from: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
-    cost_so_far: dict[tuple[int, int], float] = {start: 0.0}
+) -> dict[tuple[int, int], float]:
+    frontier: list[tuple[float, tuple[int, int]]] = [(0.0, goal)]
+    cost_so_far: dict[tuple[int, int], float] = {goal: 0.0}
 
     while frontier:
         _, current = heapq.heappop(frontier)
-        if current == goal:
-            break
         for neighbor, step_cost in _walkable_neighbors(current, level, cell_size):
             new_cost = cost_so_far[current] + step_cost
             if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
                 cost_so_far[neighbor] = new_cost
-                priority = new_cost + _grid_distance(neighbor, goal)
-                heapq.heappush(frontier, (priority, neighbor))
-                came_from[neighbor] = current
+                heapq.heappush(frontier, (new_cost, neighbor))
 
-    if goal not in came_from:
+    return cost_so_far
+
+
+def _greedy_walkable_path(
+    start: tuple[int, int],
+    goal: tuple[int, int],
+    path_costs: dict[tuple[int, int], float],
+    level: Level,
+    cell_size: float,
+) -> list[tuple[int, int]]:
+    if start not in path_costs:
         return []
 
-    path = [goal]
-    current = goal
-    while came_from[current] is not None:
-        current = came_from[current]
+    path = [start]
+    current = start
+    visited = {start}
+    while current != goal:
+        current_cost = path_costs[current]
+        candidates = [
+            (path_costs[neighbor], step_cost, neighbor)
+            for neighbor, step_cost in _walkable_neighbors(current, level, cell_size)
+            if neighbor in path_costs and neighbor not in visited and path_costs[neighbor] < current_cost
+        ]
+        if not candidates:
+            break
+        _, _, current = min(candidates)
         path.append(current)
-    path.reverse()
+        visited.add(current)
     return path
 
 
@@ -237,8 +355,8 @@ def _cell_in_bounds(cell: tuple[int, int], level: Level, cell_size: float) -> bo
 
 
 def _cell_center(cell: tuple[int, int], cell_size: float, level: Level) -> tuple[float, float]:
-    x = cell[0] * cell_size + cell_size / 2
-    y = cell[1] * cell_size + cell_size / 2
+    x = cell[0] * cell_size
+    y = cell[1] * cell_size
     return min(max(x, ENEMY_RADIUS), level.width - ENEMY_RADIUS), min(
         max(y, ENEMY_RADIUS),
         level.height - ENEMY_RADIUS,

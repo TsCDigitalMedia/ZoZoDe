@@ -98,6 +98,9 @@ def enemy_from_payload(payload: dict[str, Any]) -> Enemy:
         damage=int(payload.get("damage", ENEMY_CONFIG.damage)),
         gain=int(payload.get("gain", ENEMY_CONFIG.gain)),
         target_age=float(payload.get("target_age", 0)),
+        path_next_update_at=float(payload.get("path_next_update_at", 0)),
+        path_target_x=float(payload.get("path_target_x", payload.get("x", 0))),
+        path_target_y=float(payload.get("path_target_y", payload.get("y", 0))),
     )
 
 
