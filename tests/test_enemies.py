@@ -1,4 +1,6 @@
-from zozode.player import Player
+from zozode.enemies import enemy_path_waypoint, step_enemies
+from zozode.level import Level, LevelShape
+from zozode.player import Enemy, Player
 from zozode.player_state import spawn_enemy
 
 
@@ -73,7 +75,6 @@ def test_enemy_defaults_to_one_health(monkeypatch):
 def test_enemy_is_killed_by_one_bullet():
     from zozode.bullets import spawn_bullet
     from zozode.enemies import handle_enemy_hits
-    from zozode.player import Enemy
 
     player = make_player("player", 100, 100)
     enemy = Enemy(id="enemy", x=100, y=100, vx=0, vy=0, target="player")
@@ -85,3 +86,43 @@ def test_enemy_is_killed_by_one_bullet():
 
     assert enemies == []
     assert player.bullets == []
+
+
+def test_enemy_path_waypoint_routes_around_obstacle():
+    level = Level(
+        width=140,
+        height=140,
+        ground=(LevelShape(kind="rect", x=0, y=0, width=140, height=140),),
+        enemy_spawns=(),
+        player_spawns=(),
+        obstacles=(LevelShape(kind="rect", x=40, y=0, width=20, height=100),),
+    )
+    enemy = Enemy(id="enemy", x=20, y=20, vx=0, vy=0, target="player")
+    player = make_player("player", 120, 20)
+
+    waypoint = enemy_path_waypoint(enemy, player, level, cell_size=20)
+
+    assert waypoint != (player.x, player.y)
+    assert level.can_walk(*waypoint, 10)
+    assert waypoint[1] > enemy.y
+
+
+def test_step_enemies_walks_around_obstacle():
+    level = Level(
+        width=140,
+        height=140,
+        ground=(LevelShape(kind="rect", x=0, y=0, width=140, height=140),),
+        enemy_spawns=(),
+        player_spawns=(),
+        obstacles=(LevelShape(kind="rect", x=40, y=0, width=20, height=100),),
+    )
+    enemy = Enemy(id="enemy", x=20, y=20, vx=0, vy=0, target="player", speed=20)
+    player = make_player("player", 120, 20)
+    enemies = [enemy]
+
+    step_enemies(enemies, {player.name: player}, 1.0, 0.0, 0, level)
+
+    assert enemies == [enemy]
+    assert enemy.y > 20
+    assert enemy.x < 40
+    assert level.can_walk(enemy.x, enemy.y, 10)

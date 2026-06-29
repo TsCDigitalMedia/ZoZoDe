@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import heapq
 import math
 import random
 
@@ -106,7 +107,7 @@ def step_enemies(
                 enemy.target = target.name
                 enemy.target_age = 0
         if target is not None:
-            enemy.vx, enemy.vy = unit_vector(enemy.x, enemy.y, target.x, target.y)
+            enemy.vx, enemy.vy = enemy_path_direction(enemy, target, level)
         move_enemy_on_ground(enemy, speed * dt, level)
         if hit_player(enemy, players, now):
             continue
@@ -134,6 +135,118 @@ def move_enemy_on_ground(enemy: Enemy, distance: float, level: Level = DEFAULT_L
     else:
         enemy.vx = 0
         enemy.vy = 0
+
+
+def enemy_path_direction(enemy: Enemy, target: Player, level: Level = DEFAULT_LEVEL) -> tuple[float, float]:
+    waypoint = enemy_path_waypoint(enemy, target, level)
+    return unit_vector(enemy.x, enemy.y, waypoint[0], waypoint[1])
+
+
+def enemy_path_waypoint(
+    enemy: Enemy,
+    target: Player,
+    level: Level = DEFAULT_LEVEL,
+    cell_size: float = ENEMY_RADIUS * 2,
+) -> tuple[float, float]:
+    start = _grid_cell(enemy.x, enemy.y, cell_size)
+    goal = _grid_cell(target.x, target.y, cell_size)
+    if start == goal:
+        return target.x, target.y
+
+    path = _shortest_walkable_path(start, goal, level, cell_size)
+    if len(path) >= 2:
+        return _cell_center(path[1], cell_size, level)
+    if path:
+        return _cell_center(path[0], cell_size, level)
+    return target.x, target.y
+
+
+def _shortest_walkable_path(
+    start: tuple[int, int],
+    goal: tuple[int, int],
+    level: Level,
+    cell_size: float,
+) -> list[tuple[int, int]]:
+    frontier: list[tuple[float, tuple[int, int]]] = [(0.0, start)]
+    came_from: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
+    cost_so_far: dict[tuple[int, int], float] = {start: 0.0}
+
+    while frontier:
+        _, current = heapq.heappop(frontier)
+        if current == goal:
+            break
+        for neighbor, step_cost in _walkable_neighbors(current, level, cell_size):
+            new_cost = cost_so_far[current] + step_cost
+            if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
+                cost_so_far[neighbor] = new_cost
+                priority = new_cost + _grid_distance(neighbor, goal)
+                heapq.heappush(frontier, (priority, neighbor))
+                came_from[neighbor] = current
+
+    if goal not in came_from:
+        return []
+
+    path = [goal]
+    current = goal
+    while came_from[current] is not None:
+        current = came_from[current]
+        path.append(current)
+    path.reverse()
+    return path
+
+
+def _walkable_neighbors(
+    cell: tuple[int, int],
+    level: Level,
+    cell_size: float,
+) -> list[tuple[tuple[int, int], float]]:
+    neighbors = []
+    for dx, dy, cost in (
+        (-1, 0, 1.0),
+        (1, 0, 1.0),
+        (0, -1, 1.0),
+        (0, 1, 1.0),
+        (-1, -1, math.sqrt(2)),
+        (-1, 1, math.sqrt(2)),
+        (1, -1, math.sqrt(2)),
+        (1, 1, math.sqrt(2)),
+    ):
+        neighbor = (cell[0] + dx, cell[1] + dy)
+        if not _cell_in_bounds(neighbor, level, cell_size):
+            continue
+        x, y = _cell_center(neighbor, cell_size, level)
+        if not level.can_walk(x, y, ENEMY_RADIUS):
+            continue
+        if dx and dy:
+            side_x, side_y = _cell_center((cell[0] + dx, cell[1]), cell_size, level)
+            other_x, other_y = _cell_center((cell[0], cell[1] + dy), cell_size, level)
+            if not level.can_walk(side_x, side_y, ENEMY_RADIUS):
+                continue
+            if not level.can_walk(other_x, other_y, ENEMY_RADIUS):
+                continue
+        neighbors.append((neighbor, cost))
+    return neighbors
+
+
+def _grid_cell(x: float, y: float, cell_size: float) -> tuple[int, int]:
+    return int(x // cell_size), int(y // cell_size)
+
+
+def _cell_in_bounds(cell: tuple[int, int], level: Level, cell_size: float) -> bool:
+    return 0 <= cell[0] <= int(level.width // cell_size) and 0 <= cell[1] <= int(level.height // cell_size)
+
+
+def _cell_center(cell: tuple[int, int], cell_size: float, level: Level) -> tuple[float, float]:
+    x = cell[0] * cell_size + cell_size / 2
+    y = cell[1] * cell_size + cell_size / 2
+    return min(max(x, ENEMY_RADIUS), level.width - ENEMY_RADIUS), min(
+        max(y, ENEMY_RADIUS),
+        level.height - ENEMY_RADIUS,
+    )
+
+
+def _grid_distance(start: tuple[int, int], goal: tuple[int, int]) -> float:
+    return math.hypot(goal[0] - start[0], goal[1] - start[1])
 
 
 def choose_target(enemy: Enemy, players: dict[str, Player]) -> Player | None:
