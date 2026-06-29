@@ -8,6 +8,7 @@ TEST_WEAPON = WeaponConfig(
     magazine=10,
     reload_time=1.5,
     spread=0,
+    damage=2,
     is_holdable=False,
 )
 
@@ -31,6 +32,7 @@ def test_maybe_spawn_bullet_returns_bullet_for_alive_player():
 
     assert bullet is not None
     assert bullet.owner == "player"
+    assert bullet.damage == TEST_WEAPON.damage
     assert next_shot_at == 10.0 + TEST_WEAPON.shot_interval_seconds
 
 
@@ -103,6 +105,7 @@ def test_spawn_bullet_applies_weapon_spread(monkeypatch):
         magazine=10,
         reload_time=1.5,
         spread=0.5,
+        damage=1,
         is_holdable=False,
     )
     monkeypatch.setattr("zozode.bullets.random.uniform", lambda _low, _high: 0.5)

@@ -34,6 +34,7 @@ def spawn_bullet(
         y=player.y,
         vx=dx * BULLET_SPEED,
         vy=dy * BULLET_SPEED,
+        damage=weapon.damage,
     )
 
 

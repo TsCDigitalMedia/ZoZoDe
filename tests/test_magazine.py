@@ -13,6 +13,7 @@ TEST_WEAPON = WeaponConfig(
     magazine=2,
     reload_time=1.5,
     spread=0,
+    damage=1,
     is_holdable=False,
 )
 

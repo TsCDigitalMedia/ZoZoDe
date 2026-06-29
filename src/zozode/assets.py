@@ -23,6 +23,7 @@ class WeaponConfig:
     magazine: int
     reload_time: float
     spread: float
+    damage: int
     is_holdable: bool
 
     @property
@@ -55,6 +56,7 @@ def load_default_weapon() -> WeaponConfig:
         magazine=int(weapon_payload["magazine"]),
         reload_time=float(weapon_payload.get("reloadTime", 1.5)),
         spread=float(weapon_payload.get("spread", 0)),
+        damage=int(weapon_payload.get("damage", 1)),
         is_holdable=bool(weapon_payload.get("isHoldable", False)),
     )
 

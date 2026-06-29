@@ -33,7 +33,7 @@ def bullet_hits_player(
             continue
         distance = math.hypot(target.x - bullet.x, target.y - bullet.y)
         if distance <= DOT_RADIUS + BULLET_RADIUS:
-            damage_player(target, now)
+            damage_player(target, now, bullet.damage)
             return True
     return False
 

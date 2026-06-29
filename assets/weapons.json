@@ -1,11 +1,12 @@
 {
-    "default_weapon": "Rifle",
+    "default_weapon": "Pistol",
     "pistol": {
         "name": "Pistol",
         "rps": 5,
         "magazine": 10,
         "reloadTime": 1.2,
-        "spread": 0.2,
+        "spread": 0.1,
+        "damage": 2,
         "isHoldable": false
     },
     "rifle": {
@@ -13,7 +14,8 @@
         "rps": 8,
         "magazine": 30,
         "reloadTime": 1.8,
-        "spread": 0.28,
+        "spread": 0.2,
+        "damage": 1,
         "isHoldable": true
     },
     "lmg": {
@@ -22,6 +24,7 @@
         "magazine": 30,
         "reloadTime": 2.2,
         "spread": 0.5,
+        "damage": 1,
         "isHoldable": true
     }
 }

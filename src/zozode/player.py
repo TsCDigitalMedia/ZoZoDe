@@ -11,6 +11,7 @@ class Bullet:
     y: float
     vx: float
     vy: float
+    damage: int = 1
     age: float = 0.0
 
 
