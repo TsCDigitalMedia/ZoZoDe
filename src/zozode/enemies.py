@@ -6,8 +6,6 @@ import random
 from zozode.assets import load_enemy_configs
 from zozode.combat import damage_player
 from zozode.constants import (
-    ARENA_HEIGHT,
-    ARENA_WIDTH,
     BULLET_RADIUS,
     DIFFICULTY_EASY,
     ENEMY_BASE_SPAWN_SECONDS,
@@ -17,6 +15,7 @@ from zozode.constants import (
     ENEMY_TARGET_SECONDS,
 )
 from zozode.geometry import unit_vector
+from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Enemy, Player
 from zozode.player_state import spawn_enemy
 
@@ -46,12 +45,13 @@ def maybe_spawn_enemy(
     now: float,
     next_spawn_at: float,
     difficulty: int,
+    level: Level = DEFAULT_LEVEL,
 ) -> float:
     if now < next_spawn_at:
         return next_spawn_at
     for kind, config in ENEMY_CONFIGS.items():
         for _ in range(enemy_spawn_count(config.chance)):
-            enemy = spawn_enemy(players, config, kind)
+            enemy = spawn_enemy(players, config, kind, level)
             if enemy is not None:
                 enemies.append(enemy)
     return now + enemy_spawn_seconds(difficulty)
@@ -93,6 +93,7 @@ def step_enemies(
     dt: float,
     now: float,
     difficulty: int,
+    level: Level = DEFAULT_LEVEL,
 ) -> None:
     active = []
     for enemy in enemies:
@@ -110,9 +111,7 @@ def step_enemies(
         enemy.y += enemy.vy * speed * dt
         if hit_player(enemy, players, now):
             continue
-        in_horizontal_bounds = -ENEMY_RADIUS * 2 <= enemy.x <= ARENA_WIDTH + ENEMY_RADIUS * 2
-        in_vertical_bounds = -ENEMY_RADIUS * 2 <= enemy.y <= ARENA_HEIGHT + ENEMY_RADIUS * 2
-        if in_horizontal_bounds and in_vertical_bounds:
+        if level.in_bounds(enemy.x, enemy.y, ENEMY_RADIUS * 2):
             active.append(enemy)
     enemies[:] = active
 

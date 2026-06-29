@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 from zozode.constants import BLINK_SECONDS, BULLET_RADIUS, DOT_RADIUS, HEALTH, RESPAWN_SECONDS
+from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Bullet, Player
 from zozode.player_state import spawn_player
 
@@ -53,11 +54,15 @@ def reset_finished_blinks(players: dict[str, Player], now: float) -> None:
             player.invulnerable_until = 0
 
 
-def respawn_dead_players(players: dict[str, Player], now: float) -> None:
+def respawn_dead_players(
+    players: dict[str, Player],
+    now: float,
+    level: Level = DEFAULT_LEVEL,
+) -> None:
     for player in players.values():
         if player.alive or player.respawn_at > now:
             continue
-        fresh = spawn_player(player.name)
+        fresh = spawn_player(player.name, level)
         player.x = fresh.x
         player.y = fresh.y
         player.indicator_x = fresh.indicator_x

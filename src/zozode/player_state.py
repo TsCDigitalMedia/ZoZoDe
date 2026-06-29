@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import random
 import time
 import uuid
@@ -9,16 +8,16 @@ from typing import Any
 
 from zozode.assets import EnemyConfig, load_basic_enemy
 from zozode.colors import random_color
-from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, DOT_RADIUS, ENEMY_RADIUS, HEALTH
+from zozode.constants import DOT_RADIUS, ENEMY_RADIUS, HEALTH
 from zozode.geometry import unit_vector
+from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Bullet, Enemy, Player
 
 ENEMY_CONFIG = load_basic_enemy()
 
 
-def spawn_player(name: str) -> Player:
-    x = random.randint(DOT_RADIUS, ARENA_WIDTH - DOT_RADIUS)
-    y = random.randint(DOT_RADIUS, ARENA_HEIGHT - DOT_RADIUS)
+def spawn_player(name: str, level: Level = DEFAULT_LEVEL) -> Player:
+    x, y = level.random_player_spawn(DOT_RADIUS)
     return Player(
         name=name,
         x=x,
@@ -35,28 +34,13 @@ def spawn_enemy(
     players: dict[str, Player],
     config: EnemyConfig = ENEMY_CONFIG,
     kind: str = "basic",
+    level: Level = DEFAULT_LEVEL,
 ) -> Enemy | None:
     targets = [player for player in players.values() if player.alive]
     if not targets:
         return None
-    edge = random.randrange(4)
-    if edge == 0:
-        x = random.uniform(0, ARENA_WIDTH)
-        y = -ENEMY_RADIUS
-    elif edge == 1:
-        x = ARENA_WIDTH + ENEMY_RADIUS
-        y = random.uniform(0, ARENA_HEIGHT)
-    elif edge == 2:
-        x = random.uniform(0, ARENA_WIDTH)
-        y = ARENA_HEIGHT + ENEMY_RADIUS
-    else:
-        x = -ENEMY_RADIUS
-        y = random.uniform(0, ARENA_HEIGHT)
-    nearest_distance = min(math.hypot(player.x - x, player.y - y) for player in targets)
-    nearest_targets = [
-        player for player in targets if math.hypot(player.x - x, player.y - y) == nearest_distance
-    ]
-    target = random.choice(nearest_targets)
+    x, y = level.random_enemy_spawn(ENEMY_RADIUS)
+    target = random.choice(targets)
     vx, vy = unit_vector(x, y, target.x, target.y)
     return Enemy(
         id=uuid.uuid4().hex,

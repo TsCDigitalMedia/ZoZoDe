@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="297mm"
+   height="210mm"
+   viewBox="0 0 1122.5197 793.70081"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       id="filter9"
+       x="-0.0069906887"
+       y="-0.035122619"
+       width="1.0168942"
+       height="1.0848797">
+      <feOffset
+         dy="3"
+         dx="3"
+         id="feOffset9"
+         preserveAlpha="false" />
+      <feGaussianBlur
+         stdDeviation="3"
+         result="blur"
+         id="feGaussianBlur9" />
+      <feFlood
+         flood-color="rgb(0,0,0)"
+         flood-opacity="1"
+         result="flood"
+         id="feFlood9" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite"
+         id="feComposite9" />
+      <feBlend
+         in="blur"
+         in2="composite"
+         mode="normal"
+         id="feBlend9" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       id="filter46"
+       x="-0.0019511144"
+       y="-0.0048715907"
+       width="1.00878"
+       height="1.0219222">
+      <feFlood
+         result="flood"
+         in="SourceGraphic"
+         flood-opacity="0.498039"
+         flood-color="rgb(0,0,0)"
+         id="feFlood45" />
+      <feGaussianBlur
+         result="blur"
+         in="SourceGraphic"
+         stdDeviation="1.000000"
+         id="feGaussianBlur45" />
+      <feOffset
+         result="offset"
+         in="blur"
+         dx="6.000000"
+         dy="6.000000"
+         id="feOffset45" />
+      <feComposite
+         result="comp1"
+         operator="in"
+         in="flood"
+         in2="offset"
+         id="feComposite45" />
+      <feComposite
+         result="comp2"
+         operator="over"
+         in="SourceGraphic"
+         in2="comp1"
+         id="feComposite46" />
+    </filter>
+  </defs>
+  <g
+     id="ground"
+     style="display:inline">
+    <rect
+       style="fill:#917c6f;stroke-width:1.18783"
+       id="rect1"
+       width="1122.5197"
+       height="261.84412"
+       x="2.6867397e-14"
+       y="531.85669" />
+  </g>
+  <g
+     id="enemySpawn">
+    <path
+       style="fill:#917c6f"
+       d="M 0,531.85669 V 793.70081"
+       id="path1" />
+    <path
+       style="fill:#917c6f"
+       d="M 1122.5196,531.85669 V 793.70081"
+       id="path2" />
+  </g>
+  <g
+     id="playerSpawn">
+    <rect
+       style="fill:#008000"
+       id="rect2"
+       width="259.55167"
+       height="261.84412"
+       x="431.48401"
+       y="531.85669" />
+  </g>
+  <g
+     id="layer4"
+     style="display:inline">
+    <rect
+       style="fill:#502d16"
+       id="rect3"
+       width="1122.5195"
+       height="261.84412"
+       x="2.6867397e-14"
+       y="531.85669" />
+    <rect
+       style="display:inline;fill:#c87137;stroke-width:1"
+       id="rect10"
+       width="1122.5197"
+       height="39.204445"
+       x="2.6867397e-14"
+       y="492.65222" />
+    <rect
+       style="fill:#a05a2c;stroke-width:0.518229;filter:url(#filter46)"
+       id="rect4"
+       width="1230.0663"
+       height="492.65222"
+       x="-53.773342"
+       y="0"
+       transform="matrix(0.92069805,0,0,1,39.509009,0)" />
+    <path
+       id="rect5"
+       style="fill:#008080;stroke-width:2.22361;filter:url(#filter9)"
+       d="m 46.289064,258.86133 v 204.9961 H 521.06251 v -204.9961 z m 555.167986,0 v 204.9961 h 474.77345 v -204.9961 z" />
+  </g>
+</svg>

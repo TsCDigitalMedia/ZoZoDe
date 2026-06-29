@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, HEIGHT, WIDTH
+from zozode.constants import HEIGHT, WIDTH
 from zozode.geometry import clamp
+from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Player
 
 
-def camera_offset(player: Player) -> tuple[float, float]:
-    x = clamp(player.x - WIDTH / 2, 0, max(0, ARENA_WIDTH - WIDTH))
-    y = clamp(player.y - HEIGHT / 2, 0, max(0, ARENA_HEIGHT - HEIGHT))
+def camera_offset(player: Player, level: Level = DEFAULT_LEVEL) -> tuple[float, float]:
+    x = clamp(player.x - WIDTH / 2, 0, max(0, level.width - WIDTH))
+    y = clamp(player.y - HEIGHT / 2, 0, max(0, level.height - HEIGHT))
     return x, y
 
 

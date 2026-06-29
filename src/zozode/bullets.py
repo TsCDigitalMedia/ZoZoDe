@@ -5,8 +5,9 @@ import random
 import uuid
 
 from zozode.assets import WeaponConfig, load_default_weapon
-from zozode.constants import ARENA_HEIGHT, ARENA_WIDTH, BULLET_LIFETIME, BULLET_SPEED
+from zozode.constants import BULLET_LIFETIME, BULLET_SPEED
 from zozode.geometry import unit_vector
+from zozode.level import DEFAULT_LEVEL, Level
 from zozode.player import Bullet, Player
 
 DEFAULT_WEAPON = load_default_weapon()
@@ -51,17 +52,13 @@ def maybe_spawn_bullet(
     return spawn_bullet(player, mouse_pos, weapon), now + weapon.shot_interval_seconds
 
 
-def step_bullets(players: dict[str, Player], dt: float) -> None:
+def step_bullets(players: dict[str, Player], dt: float, level: Level = DEFAULT_LEVEL) -> None:
     for player in players.values():
         active = []
         for bullet in player.bullets:
             bullet.x += bullet.vx * dt
             bullet.y += bullet.vy * dt
             bullet.age += dt
-            if (
-                0 <= bullet.x <= ARENA_WIDTH
-                and 0 <= bullet.y <= ARENA_HEIGHT
-                and bullet.age <= BULLET_LIFETIME
-            ):
+            if level.in_bounds(bullet.x, bullet.y) and bullet.age <= BULLET_LIFETIME:
                 active.append(bullet)
         player.bullets = active
